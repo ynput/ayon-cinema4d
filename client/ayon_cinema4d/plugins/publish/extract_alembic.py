@@ -5,42 +5,38 @@ from ayon_core.pipeline import publish
 from ayon_cinema4d.api import lib, exporters
 
 
-class ExtractCameraAlembic(publish.Extractor):
+class ExtractAlembic(publish.Extractor):
     """Extract a Camera as Alembic.
 
     The cameras gets baked to world space by default. Only when the instance's
     `bakeToWorldSpace` is set to False it will include its full hierarchy.
-
     """
 
-    label = "Camera (Alembic)"
+    label = "Alembic"
     hosts = ["cinema4d"]
-    families = ["camera"]
+    families = ["pointcache"]
 
     def process(self, instance):
-        doc = c4d.documents.GetActiveDocument()
+
+        doc: c4d.BaseDocument = instance.context.data["doc"]
+
         # Collect the start and end including handles
         start = instance.data["frameStartHandle"]
         end = instance.data["frameEndHandle"]
-
         step = instance.data.get("step", 1)
         bake_to_worldspace = instance.data("bakeToWorldSpace", True)
 
-        # get cameras
         nodes = instance[:]
-        cameras = [obj for obj in nodes if obj.GetType() == c4d.CameraObject]
-
         # Define extract output file path
         dir_path = self.staging_dir(instance)
         filename = "{0}.abc".format(instance.name)
         path = os.path.join(dir_path, filename)
 
+        export_nodes = self.filter_objects(nodes)
+
         # Perform alembic extraction
         with lib.maintained_selection():
-            # Select the cameras
-            doc.SetSelection(None, c4d.SELECTION_NEW)  # clear selection
-            for camera in cameras:
-                doc.SetSelection(camera.obj, c4d.SELECTION_ADD)
+            lib.set_selection(doc, export_nodes)
 
             # Export selection to camera
             exporters.extract_alembic(
@@ -62,3 +58,15 @@ class ExtractCameraAlembic(publish.Extractor):
         instance.data.setdefault("representations", []).append(representation)
 
         self.log.info(f"Extracted instance '{instance.name}' to: {path}")
+
+    def filter_objects(self, nodes):
+        return nodes
+
+
+class ExtractCameraAlembic(ExtractAlembic):
+    label = "Camera (Alembic)"
+    families = ["camera"]
+
+    def filter_objects(self, nodes):
+        return [obj for obj in nodes if obj.GetType() == c4d.CameraObject]
+
