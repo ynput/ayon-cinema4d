@@ -27,12 +27,3 @@ class CreateCamera(plugin.Cinema4DCreator):
                 default=True)
         )
         return defs
-
-
-class CreateCameraRig(plugin.Cinema4DCreator):
-    """Complex hierarchy with camera."""
-
-    identifier = "io.ayon.creators.cinema4d.camerarig"
-    label = "Camera Rig"
-    product_type = "camerarig"
-    icon = "video-camera"
