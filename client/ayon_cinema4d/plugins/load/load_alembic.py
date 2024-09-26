@@ -93,10 +93,15 @@ class AlembicLoader(plugin.Cinema4DLoader):
 
         for obj in objects:
             # Only update those with alembic path set
-            if not obj[c4d.ALEMBIC_PATH]:
+            if obj[c4d.ALEMBIC_PATH]:
+                obj[c4d.ALEMBIC_PATH] = filepath
                 continue
 
-            obj[c4d.ALEMBIC_PATH] = filepath
+            # Or if we find a Alembic Morph tag update that instead
+            # This will exist on the object if it was made editable.
+            alembic_morph = obj.GetTag(c4d.Talembicmorphtag)
+            if alembic_morph:
+                alembic_morph[c4d.ALEMBIC_MT_PATH] = filepath
 
         # Update representation id
         for i, base_container in container_node.GetUserDataContainer():
