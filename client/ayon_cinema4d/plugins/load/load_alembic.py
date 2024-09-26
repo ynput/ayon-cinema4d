@@ -34,23 +34,14 @@ class AlembicLoader(plugin.Cinema4DLoader):
     def load(self, context, name=None, namespace=None, options=None):
         """Merge the Alembic into the scene."""
 
-        print(name)
-        print(namespace)
-
         # Merge the alembic, then containerise the generated nodes so we have
         # access to them on update.
         filepath = self.filepath_from_context(context)
 
         doc = lib.active_document()
 
-        folder_name: str = context["folder"]["name"]
-        product_name: str = context["product"]["name"]
-        namespace = namespace or lib.get_unique_namespace(
-            folder_name,
-            prefix="_" if folder_name[0].isdigit() else "",
-            suffix="",
-            doc=doc,
-        )
+        name, namespace = self.get_name_and_namespace(
+            context, name, namespace, doc=doc)
 
         loaded_doc = self._load_file(filepath)
         nodes = []
