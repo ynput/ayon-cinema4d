@@ -90,9 +90,19 @@ def maintained_selection():
     try:
         yield
     finally:
-        doc.SetSelection(None, c4d.SELECTION_NEW)  # clear selection
-        for obj in previous_selection:
-            doc.SetSelection(obj, c4d.SELECTION_ADD)
+        set_selection(doc, previous_selection)
+
+
+def set_selection(doc, nodes):
+    if not nodes:
+        # Clear selection
+        for node in doc.GetSelection():
+            doc.SetSelection(node, c4d.SELECTION_SUB)
+        return
+
+    doc.SetSelection(next(it), c4d.SELECTION_NEW)
+    for node in it:
+        doc.SetSelection(node, c4d.SELECTION_NEW)
 
 
 @contextlib.contextmanager
@@ -336,20 +346,28 @@ def get_all_children(obj):
     return list(iter_all_children(obj))
 
 
-def get_objects_from_container(container):
+def get_objects_from_container(container, existing_only=True):
     """Get the objects from the container.
 
     A container in Cinema4d is a selection object. We have to get the so called
     InExcludeData, get the object count and then get the objects at the indices.
 
+    Arguments:
+        container (c4d.BaseObject): The object containing selections.
+
     Returns:
         generator: The objects in the selection object.
     """
-    doc = c4d.documents.GetActiveDocument()
+    doc: c4d.documents.BaseDocument = container.GetMain()
+    assert isinstance(doc, c4d.documents.BaseDocument)
     in_exclude_data = container[c4d.SELECTIONOBJECT_LIST]
     object_count = in_exclude_data.GetObjectCount()
     for i in range(object_count):
-        yield in_exclude_data.ObjectFromIndex(doc, i)
+        obj = in_exclude_data.ObjectFromIndex(doc, i)
+        if existing_only and not obj:
+            continue
+
+        yield obj
 
 
 def add_objects_to_container(container, nodes):
