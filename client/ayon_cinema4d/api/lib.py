@@ -156,6 +156,12 @@ def imprint(node, data):
         data (dict): Dictionary of key/value pairs
     """
 
+    existing_user_data = node.GetUserDataContainer()
+    existing_to_id = {}
+    for description_id, base_container in existing_user_data:
+        key = base_container[c4d.DESC_NAME]
+        existing_to_id[key] = description_id
+
     for key, value in data.items():
 
         if callable(value):
@@ -176,11 +182,17 @@ def imprint(node, data):
         else:
             raise TypeError("Unsupported type: %r" % type(value))
 
-        base_container = c4d.GetCustomDataTypeDefault(add_type)
-        base_container[c4d.DESC_NAME] = key
-        base_container[c4d.DESC_SHORT_NAME] = key
-        base_container[c4d.DESC_ANIMATE] = c4d.DESC_ANIMATE_OFF
-        element = node.AddUserData(base_container)
+        if key in existing_to_id:
+            # Set existing
+            element = existing_to_id[key]
+        else:
+            # Create new
+            base_container = c4d.GetCustomDataTypeDefault(add_type)
+            base_container[c4d.DESC_NAME] = key
+            base_container[c4d.DESC_SHORT_NAME] = key
+            base_container[c4d.DESC_ANIMATE] = c4d.DESC_ANIMATE_OFF
+            element = node.AddUserData(base_container)
+
         node[element] = value
 
     c4d.EventAdd()
@@ -277,6 +289,11 @@ def get_objects_by_name(object_name, root_obj, obj_type=None):
 
 
 def iter_objects(root_obj):
+    if not root_obj:
+        # This way we 'pass' silently when passed `doc.GetFirstObject()` but
+        # the scene has no objects whatsoever.
+        return
+
     for root_obj in get_siblings(root_obj, include_self=True):
         yield root_obj
 
@@ -352,7 +369,6 @@ def get_materials_from_objects(objects):
                 materials.append(material)
 
     return materials
-
 
 
 def set_frame_range_from_entity(task_entity, doc=None):

@@ -5,7 +5,8 @@ from ayon_core.pipeline import (
     Creator,
     CreatedInstance,
     LoaderPlugin,
-    AYON_INSTANCE_ID
+    AYON_INSTANCE_ID,
+    AVALON_INSTANCE_ID
 )
 from ayon_core.lib import BoolDef
 
@@ -33,20 +34,16 @@ def cache_instance_data(shared_data):
     if shared_data.get('cinema4d_cached_instances') is None:
         cache = {}
         doc = lib.active_document()
-        for obj in lib.iter_objects(doc.GetFirstObject()):
-            print(obj)
-            print(lib.get_object_user_data_by_name(obj, "id"))
-            if lib.get_object_user_data_by_name(obj, "id") != AYON_INSTANCE_ID:  # noqa
-                continue
+        instance_ids = {AYON_INSTANCE_ID, AVALON_INSTANCE_ID}
 
-            print("B", obj)
+        for obj in lib.iter_objects(doc.GetFirstObject()):
+            if lib.get_object_user_data_by_name(obj, "id") not in instance_ids:
+                continue
 
             creator_id = lib.get_object_user_data_by_name(
                 obj, "creator_identifier")
             if not creator_id:
                 continue
-
-            print(obj)
 
             cache.setdefault(creator_id, []).append(obj)
 
@@ -119,8 +116,10 @@ class Cinema4DCreator(Creator):
 
     def collect_instances(self):
         shared_data = cache_instance_data(self.collection_shared_data)
+        print(shared_data)
         for obj in shared_data["cinema4d_cached_instances"].get(
                 self.identifier, []):
+
             data = lib.read(obj)
             data["instance_id"] = str(hash(obj))
 
@@ -150,6 +149,10 @@ class Cinema4DCreator(Creator):
             self._remove_instance_from_context(instance)
 
     def _imprint(self, node, data):
+
+        # Do not store instance id since it's the node hash
+        data.pop("instance_id", None)
+
         lib.imprint(node, data)
 
     def get_pre_create_attr_defs(self):

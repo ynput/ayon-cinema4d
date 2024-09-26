@@ -1,7 +1,9 @@
 # TODO: This does not work yet
 
 import ayon_api
-from ayon_core.pipeline import CreatedInstance, AutoCreator
+from ayon_core.pipeline import CreatedInstance, AutoCreator, AYON_INSTANCE_ID
+from ayon_cinema4d.api.plugin import cache_instance_data
+from ayon_cinema4d.api import lib, plugin
 
 
 class CreateWorkfile(AutoCreator):
@@ -55,6 +57,11 @@ class CreateWorkfile(AutoCreator):
                 "task": task_name,
                 "variant": task_name,
             }
+
+            # Enforce forward compatibility to avoid the instance to default
+            # to the legacy `AVALON_INSTANCE_ID`
+            data["id"] = AYON_INSTANCE_ID
+
             data.update(
                 self.get_dynamic_data(
                     project_name,
@@ -94,32 +101,48 @@ class CreateWorkfile(AutoCreator):
             workfile_instance["task"] = task_name
             workfile_instance["productName"] = product_name
 
-        # Create the node and imprint initial data
-        workfile_instance.transient_data["instance_node"] = instance_node
-
     def collect_instances(self):
 
-        instance_node = bpy.data.collections.get(AYON_CONTAINERS)
-        if not instance_node:
-            return
+        shared_data = cache_instance_data(self.collection_shared_data)
+        for obj in shared_data["cinema4d_cached_instances"].get(
+                self.identifier, []):
 
-        property = instance_node.get(AYON_PROPERTY)
-        if not property:
-            return
+            data = lib.read(obj)
+            data["instance_id"] = str(hash(obj))
 
-        # Create instance object from existing data
-        instance = CreatedInstance.from_existing(
-            instance_data=property.to_dict(),
-            creator=self
-        )
-        instance.transient_data["instance_node"] = instance_node
+            # Add instance
+            created_instance = CreatedInstance.from_existing(data, self)
 
-        # Add instance to create context
-        self._add_instance_to_context(instance)
+            # Collect transient data
+            created_instance.transient_data["instance_node"] = obj
+
+            # Add instance to create context
+            self._add_instance_to_context(created_instance)
+
+            # Collect only one
+            break
+
+    def update_instances(self, update_list):
+        for created_inst, _changes in update_list:
+
+            # If it has no node yet, then it's a new workfile instance
+            node = created_inst.transient_data.get("instance_node")
+            if not node:
+                name = lib.get_unique_namespace(
+                    created_inst.data["productName"])
+                node = plugin.create_selection([], name=name)
+                created_inst.transient_data["instance_node"] = node
+
+            new_data = created_inst.data_to_store()
+
+            # Do not store instance id since it's the node hash
+            new_data.pop("instance_id", None)
+
+            lib.imprint(node, new_data)
 
     def remove_instances(self, instances):
         for instance in instances:
             node = instance.transient_data["instance_node"]
-            del node[AYON_PROPERTY]
+            node.Remove()
 
             self._remove_instance_from_context(instance)
