@@ -177,14 +177,14 @@ class ResetColorspace(c4d.plugins.CommandData):
         return True
 
 
-class BuildWorkFileCommand(c4d.plugins.CommandData):
-    id = AYON_BUILD_WORKFILE_ID
-    label = "Build Workfile"
-    icon = c4d.bitmaps.InitResourceBitmap(1024542)  # wrench
-
-    def Execute(self, doc):
-        BuildWorkfile().process()
-        return True
+# class BuildWorkFileCommand(c4d.plugins.CommandData):
+#     id = AYON_BUILD_WORKFILE_ID
+#     label = "Build Workfile"
+#     icon = c4d.bitmaps.InitResourceBitmap(1024542)  # wrench
+#
+#     def Execute(self, doc):
+#         BuildWorkfile().process()
+#         return True
 
 
 class ExperimentalTools(c4d.plugins.CommandData):
@@ -223,7 +223,7 @@ def install_menu():
     add_command(menu, ResetSceneResolution)
     add_command(menu, ResetColorspace)
     menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
-    add_command(menu, BuildWorkFileCommand)
+    # add_command(menu, BuildWorkFileCommand)
     add_command(menu, ExperimentalTools)
 
     if plugins_menu:
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         ResetFrameRange,
         ResetSceneResolution,
         ResetColorspace,
-        BuildWorkFileCommand,
+        # BuildWorkFileCommand,
         ExperimentalTools,
     ]:
         c4d.plugins.RegisterCommandPlugin(
