@@ -148,7 +148,7 @@ def get_unique_namespace(folder_name, prefix=None, suffix=None, doc=None):
     return unique
 
 
-def imprint(node, data):
+def imprint(node, data, group=None):
     """Write `data` to `node` as userDefined attributes
 
     Arguments:
@@ -161,6 +161,24 @@ def imprint(node, data):
     for description_id, base_container in existing_user_data:
         key = base_container[c4d.DESC_NAME]
         existing_to_id[key] = description_id
+
+    # If `group` is specified, find the group to add new attributes to.
+    group_id = None
+    if group:
+        # Search the group first, if it does not exist, create it.
+        for description_id, base_container in existing_user_data:
+            name = base_container[c4d.DESC_NAME]
+            if name == group and description_id[1].dtype == c4d.DTYPE_GROUP:
+                group_id = description_id
+                break
+        else:
+            # Create the group
+            group_bc = c4d.GetCustomDatatypeDefault(c4d.DTYPE_GROUP)
+            group_bc[c4d.DESC_NAME] = group
+            group_bc[c4d.DESC_SHORT_NAME] = group
+            group_bc[c4d.DESC_TITLEBAR] = True
+            group_bc[c4d.DESC_GUIOPEN] = False
+            group_id = node.AddUserData(group_bc)
 
     for key, value in data.items():
 
@@ -191,6 +209,9 @@ def imprint(node, data):
             base_container[c4d.DESC_NAME] = key
             base_container[c4d.DESC_SHORT_NAME] = key
             base_container[c4d.DESC_ANIMATE] = c4d.DESC_ANIMATE_OFF
+            if group_id:
+                base_container[c4d.DESC_PARENTGROUP] = group_id
+
             element = node.AddUserData(base_container)
 
         node[element] = value

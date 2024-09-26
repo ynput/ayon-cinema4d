@@ -204,7 +204,7 @@ def containerise(name,
             "representation": str(context["representation"]["id"]),
         }
 
-        lib.imprint(container, data)
+        lib.imprint(container, data, group="AYON")
         # Add the container to the AYON_CONTAINERS layer
         avalon_layer = get_containers_layer(doc=doc)
         container.SetLayerObject(avalon_layer)

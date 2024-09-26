@@ -152,7 +152,7 @@ class Cinema4DCreator(Creator):
         # Do not store instance id since it's the node hash
         data.pop("instance_id", None)
 
-        lib.imprint(node, data)
+        lib.imprint(node, data, group="AYON")
 
     def get_pre_create_attr_defs(self):
         return [

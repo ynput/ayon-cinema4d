@@ -138,7 +138,7 @@ class CreateWorkfile(AutoCreator):
             # Do not store instance id since it's the node hash
             new_data.pop("instance_id", None)
 
-            lib.imprint(node, new_data)
+            lib.imprint(node, new_data, group="AYON")
 
     def remove_instances(self, instances):
         for instance in instances:
