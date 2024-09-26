@@ -116,7 +116,6 @@ class Cinema4DCreator(Creator):
 
     def collect_instances(self):
         shared_data = cache_instance_data(self.collection_shared_data)
-        print(shared_data)
         for obj in shared_data["cinema4d_cached_instances"].get(
                 self.identifier, []):
 
