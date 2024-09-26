@@ -117,5 +117,4 @@ class AlembicLoader(plugin.Cinema4DLoader):
             if obj:
                 obj.Remove()
         container_node.Remove()
-
         c4d.EventAdd()
