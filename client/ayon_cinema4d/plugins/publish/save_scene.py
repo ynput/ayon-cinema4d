@@ -1,5 +1,14 @@
+import os
 import pyblish.api
-from ayon_core.pipeline import registered_host
+import c4d
+
+
+def get_document_path(doc: c4d.documents.BaseDocument):
+    doc_root = doc.GetDocumentPath()
+    doc_name = doc.GetDocumentName()
+    if doc_root and doc_name:
+        return os.path.join(doc_root, doc_name)
+    return
 
 
 class SaveCurrentScene(pyblish.api.ContextPlugin):
@@ -11,14 +20,19 @@ class SaveCurrentScene(pyblish.api.ContextPlugin):
 
     def process(self, context):
 
-        host = registered_host()
-        assert context.data['currentFile'] == host.current_file()
-
+        doc: c4d.documents.BaseDocument = context.data["doc"]
         # If file has no modifications, skip forcing a file save
-        if not host.has_unsaved_changes():
+        if not doc.GetChanged():
             self.log.debug("Skipping file save as there "
-                           "are no modifications..")
+                           "are no unsaved changes..")
             return
 
-        self.log.info("Saving current file..")
-        host.save_file()
+        current_file = get_document_path(doc)
+        assert context.data['currentFile'] == current_file
+
+        self.log.debug(f"Saving current file: {current_file}")
+        c4d.documents.SaveDocument(
+            doc, current_file,
+            saveflags=c4d.SAVEDOCUMENTFLAGS_NONE,
+            format=c4d.FORMAT_C4DEXPORT
+        )
