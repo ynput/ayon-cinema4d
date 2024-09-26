@@ -26,10 +26,10 @@ def save_file(filepath=None):
     doc.SetDocumentName(os.path.basename(filepath))
 
     c4d.CallCommand(12098)  # save
-    #            return c4d.documents.SaveDocument(doc,
-    #                                               filepath,
-    #                                               c4d.SAVEDOCUMENTFLAGS_NONE,
-    #                                               c4d.FORMAT_C4DEXPORT)
+    # return c4d.documents.SaveDocument(doc,
+    #                                   filepath,
+    #                                   c4d.SAVEDOCUMENTFLAGS_NONE,
+    #                                   c4d.FORMAT_C4DEXPORT)
 
 
 def open_file(filepath):
