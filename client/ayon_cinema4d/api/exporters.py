@@ -84,11 +84,6 @@ def extract_alembic(filepath,
     if frame_end is None:
         frame_end = doc.GetMinTime().GetFrame(doc.GetFps())
 
-    # File format
-    abc_export_options[c4d.ABCEXPORT_FORMAT] = 1
-    abc_export_options[c4d.ABCEXPORT_FORMAT_HDF5_LEGACY] = None
-    abc_export_options[c4d.ABCEXPORT_FORMAT_OGAWA] = None
-
     # Animation
     abc_export_options[c4d.ABCEXPORT_FRAME_START] = frame_start
     abc_export_options[c4d.ABCEXPORT_FRAME_END] = frame_end
