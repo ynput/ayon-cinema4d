@@ -63,6 +63,10 @@ class XRefLoader(plugin.Cinema4DLoader):
         # There should be only 1 xref node
         for xref in lib.get_objects_from_container(container_node):
             if xref.GetTypeName() == "XRef":
+                # This requires `c4d.DESCFLAGS_SET_USERINTERACTION`
+                # which will unfortunately prompt the user to confirm it.
+                # There is no other way, see:
+                # https://developers.maxon.net/forum/topic/15728/update-xref-filepath-without-user-interaction  # noqa: E402
                 xref.SetParameter(
                     c4d.ID_CA_XREF_FILE,
                     filepath,
