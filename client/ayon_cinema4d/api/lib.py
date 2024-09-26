@@ -100,6 +100,7 @@ def set_selection(doc, nodes):
             doc.SetSelection(node, c4d.SELECTION_SUB)
         return
 
+    it = iter(nodes)
     doc.SetSelection(next(it), c4d.SELECTION_NEW)
     for node in it:
         doc.SetSelection(node, c4d.SELECTION_NEW)
