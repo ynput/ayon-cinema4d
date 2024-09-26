@@ -136,8 +136,7 @@ class Cinema4DCreator(Creator):
         for created_inst, _changes in update_list:
             new_data = created_inst.data_to_store()
             node = created_inst.transient_data["instance_node"]
-            # self._update_tool_with_data(node, new_data)
-            # self._imprint(node, new_data)
+            self._imprint(node, new_data)
 
     def remove_instances(self, instances):
         for instance in instances:
