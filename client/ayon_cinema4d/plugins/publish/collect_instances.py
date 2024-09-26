@@ -31,8 +31,8 @@ class CollectInstances(pyblish.api.InstancePlugin):
         # Define nice label
         name = instance_node.GetName()  # use short name
         label = "{0} ({1})".format(name, instance.data["folderPath"])
-        
-        # Set frame start handle and frame end handle if frame ranges are 
+
+        # Set frame start handle and frame end handle if frame ranges are
         # available
         if "frameStart" in instance.data and "frameEnd" in instance.data:
             # Enforce existence if handles

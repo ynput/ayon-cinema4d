@@ -1,6 +1,5 @@
-import itertools
-
 import c4d
+import typing
 
 from ayon_core.pipeline import (
     Creator,
@@ -11,6 +10,9 @@ from ayon_core.pipeline import (
 from ayon_core.lib import BoolDef
 
 from . import lib
+
+if typing.TYPE_CHECKING:
+    from typing import Optional, List
 
 
 def cache_instance_data(shared_data):

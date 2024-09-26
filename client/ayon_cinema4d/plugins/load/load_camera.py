@@ -65,7 +65,7 @@ class CameraLoader(plugin.Cinema4DLoader):
 
     def load(self, context, name=None, namespace=None, options=None):
         """Load the camera."""
-        
+
         doc = lib.active_document()
         name, namespace = self.get_name_and_namespace(
             context, name, namespace, doc)
