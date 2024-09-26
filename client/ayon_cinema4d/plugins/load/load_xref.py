@@ -88,4 +88,3 @@ class XRefLoader(plugin.Cinema4DLoader):
             obj.Remove()
         container_node.Remove()
         c4d.EventAdd()
-        c4d.CallCommand(12168)  # Delete Unused Materials
