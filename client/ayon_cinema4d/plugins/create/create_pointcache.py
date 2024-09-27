@@ -1,4 +1,3 @@
-from ayon_core.lib import BoolDef
 from ayon_cinema4d.api import (
     lib,
     plugin

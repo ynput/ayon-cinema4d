@@ -1,5 +1,3 @@
-# TODO: This does not work yet
-
 import ayon_api
 from ayon_core.pipeline import CreatedInstance, AutoCreator, AYON_INSTANCE_ID
 from ayon_cinema4d.api.plugin import cache_instance_data
