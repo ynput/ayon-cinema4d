@@ -209,7 +209,8 @@ def imprint(node, data, group=None):
             add_type = c4d.DTYPE_STRING
             value = f"{JSON_PREFIX}{json.dumps(value)}"
         else:
-            raise TypeError("Unsupported type: %r" % type(value))
+            raise TypeError(
+                f"Unsupported type for {key}: {value} ({type(value)})")
 
         if key in existing_to_id:
             # Set existing
@@ -270,10 +271,13 @@ def read(node) -> dict:
     if data is None:
         return {}
 
-    # Ignore hidden/internal data
     data = {
         key: value
-        for key, value in data.items() if not key.startswith("_")
+        for key, value in data.items()
+        # Ignore hidden/internal data
+        if not key.startswith("_")
+        # Ignore values that are None (e.g. groups in user data)
+        and value is not None
     }
 
     for key, value in data.items():
