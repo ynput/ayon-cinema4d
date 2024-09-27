@@ -45,6 +45,33 @@ class RenderError(RuntimeError):
     pass
 
 
+def get_plugin_imexport_options(plugin, label=None):
+    if label is None:
+        label = str(plugin)
+
+    plugin_obj = c4d.plugins.FindPlugin(
+        plugin,
+        c4d.PLUGINTYPE_SCENESAVER,
+    )
+    if plugin_obj is None:
+        raise Exception(f"Could not find plug-in: {label}.")
+
+    options = {}
+    # Send MSG_RETRIEVEPRIVATEDATA to Alembic export plugin
+    if plugin_obj.Message(c4d.MSG_RETRIEVEPRIVATEDATA, options):
+        if "imexporter" not in options:
+            raise Exception(
+                f"Could not find options container for the {label} exporter."
+            )
+
+    # BaseList2D object stored in "imexporter" key hold the settings
+    imexporter_options = options["imexporter"]
+    if imexporter_options is None:
+        raise Exception(f"Could not find options for the {label} exporter.")
+
+    return imexporter_options
+
+
 def extract_alembic(filepath,
                     frame_start=None,
                     frame_end=None,
@@ -56,27 +83,7 @@ def extract_alembic(filepath,
                     verbose=False,
                     **kwargs):
     """Extract a single Alembic Cache."""
-
     doc = doc or c4d.documents.GetActiveDocument()
-    alembic_plugin = c4d.plugins.FindPlugin(
-        c4d.FORMAT_ABCEXPORT,
-        c4d.PLUGINTYPE_SCENESAVER,
-    )
-    if alembic_plugin is None:
-        raise Exception("Could not find Alembic plug-in.")
-
-    options = {}
-    # Send MSG_RETRIEVEPRIVATEDATA to Alembic export plugin
-    if alembic_plugin.Message(c4d.MSG_RETRIEVEPRIVATEDATA, options):
-        if "imexporter" not in options:
-            raise Exception(
-                "Could not find options container for the Alembic exporter."
-            )
-
-    # BaseList2D object stored in "imexporter" key hold the settings
-    abc_export_options = options["imexporter"]
-    if abc_export_options is None:
-        raise Exception("Could not find options for the Alembic exporter.")
 
     # Fallback to Cinema4d timeline if no start or end frame provided.
     if frame_start is None:
@@ -84,63 +91,62 @@ def extract_alembic(filepath,
     if frame_end is None:
         frame_end = doc.GetMinTime().GetFrame(doc.GetFps())
 
+    # Set export options
+    options = get_plugin_imexport_options(c4d.FORMAT_ABCEXPORT,
+                                          label="Alembic")
     # Animation
-    abc_export_options[c4d.ABCEXPORT_FRAME_START] = frame_start
-    abc_export_options[c4d.ABCEXPORT_FRAME_END] = frame_end
-    abc_export_options[c4d.ABCEXPORT_FRAME_STEP] = frame_step
-    abc_export_options[c4d.ABCEXPORT_SUBFRAMES] = sub_frames
+    options[c4d.ABCEXPORT_FRAME_START] = frame_start
+    options[c4d.ABCEXPORT_FRAME_END] = frame_end
+    options[c4d.ABCEXPORT_FRAME_STEP] = frame_step
+    options[c4d.ABCEXPORT_SUBFRAMES] = sub_frames
 
     # General
-    # abc_export_options[c4d.ABCEXPORT_SCALE] = 1  # c4d.UnitScaleData
-    abc_export_options[c4d.ABCEXPORT_SELECTION_ONLY] = selection
-    abc_export_options[c4d.ABCEXPORT_CAMERAS] = kwargs.get("cameras", True)
-    abc_export_options[c4d.ABCEXPORT_SPLINES] = kwargs.get("splines", False)
-    abc_export_options[c4d.ABCEXPORT_HAIR] = kwargs.get("hair", False)
-    abc_export_options[c4d.ABCEXPORT_XREFS] = kwargs.get("xrefs", True)
-    abc_export_options[c4d.ABCEXPORT_GLOBAL_MATRIX] = global_matrix
+    # options[c4d.ABCEXPORT_SCALE] = 1  # c4d.UnitScaleData
+    options[c4d.ABCEXPORT_SELECTION_ONLY] = selection
+    options[c4d.ABCEXPORT_CAMERAS] = kwargs.get("cameras", True)
+    options[c4d.ABCEXPORT_SPLINES] = kwargs.get("splines", False)
+    options[c4d.ABCEXPORT_HAIR] = kwargs.get("hair", False)
+    options[c4d.ABCEXPORT_XREFS] = kwargs.get("xrefs", True)
+    options[c4d.ABCEXPORT_GLOBAL_MATRIX] = global_matrix
 
     # Subdivision surface
-    abc_export_options[c4d.ABCEXPORT_HYPERNURBS] = kwargs.get(
+    options[c4d.ABCEXPORT_HYPERNURBS] = kwargs.get(
         "subdivisionSurfaces", True
     )
-    abc_export_options[c4d.ABCEXPORT_SDS_WEIGHTS] = kwargs.get(
+    options[c4d.ABCEXPORT_SDS_WEIGHTS] = kwargs.get(
         "subdivisionSurfaceWeights", False
     )
-    abc_export_options[c4d.ABCEXPORT_PARTICLES] = kwargs.get("particles", False)
-    abc_export_options[c4d.ABCEXPORT_PARTICLE_GEOMETRY] = kwargs.get(
+    options[c4d.ABCEXPORT_PARTICLES] = kwargs.get("particles", False)
+    options[c4d.ABCEXPORT_PARTICLE_GEOMETRY] = kwargs.get(
         "particleGeometry", False
     )
 
     # Optional data
-    abc_export_options[c4d.ABCEXPORT_VISIBILITY] = kwargs.get("visibility", True)
-    abc_export_options[c4d.ABCEXPORT_UVS] = kwargs.get("uvs", True)
-    abc_export_options[c4d.ABCEXPORT_VERTEX_MAPS] = kwargs.get("vertexMaps", False)
+    options[c4d.ABCEXPORT_VISIBILITY] = kwargs.get("visibility", True)
+    options[c4d.ABCEXPORT_UVS] = kwargs.get("uvs", True)
+    options[c4d.ABCEXPORT_VERTEX_MAPS] = kwargs.get("vertexMaps", False)
     # Vertex normals
-    abc_export_options[c4d.ABCEXPORT_NORMALS] = kwargs.get("normals", False)
-    abc_export_options[c4d.ABCEXPORT_POLYGONSELECTIONS] = kwargs.get(
-        "polygonSelections", True
-    )
-    abc_export_options[c4d.ABCEXPORT_VERTEX_COLORS] = kwargs.get("vertexColors", False)
-    abc_export_options[c4d.ABCEXPORT_POINTS_ONLY] = kwargs.get("pointsOnly", False)
-    abc_export_options[c4d.ABCEXPORT_DISPLAY_COLORS] = kwargs.get(
-        "displayColors", False
-    )
-    abc_export_options[c4d.ABCEXPORT_MERGE_CACHE] = kwargs.get("mergeCache", False)
+    options[c4d.ABCEXPORT_NORMALS] = kwargs.get("normals", False)
+    options[c4d.ABCEXPORT_POLYGONSELECTIONS] = kwargs.get("polygonSelections", True)  # noqa: E501
+    options[c4d.ABCEXPORT_VERTEX_COLORS] = kwargs.get("vertexColors", False)
+    options[c4d.ABCEXPORT_POINTS_ONLY] = kwargs.get("pointsOnly", False)
+    options[c4d.ABCEXPORT_DISPLAY_COLORS] = kwargs.get("displayColors", False)
+    options[c4d.ABCEXPORT_MERGE_CACHE] = kwargs.get("mergeCache", False)
 
-    # abc_export_options[c4d.ABCEXPORT_GROUP] = None  # ???
+    # options[c4d.ABCEXPORT_GROUP] = None  # ???
     # # Don't export child objects with only selected?
-    # abc_export_options[c4d.ABCEXPORT_PARENTS_ONLY_MODE] = False
-    # abc_export_options[c4d.ABCEXPORT_STR_ANIMATION] = None  # ???
-    # abc_export_options[c4d.ABCEXPORT_STR_GENERAL] = None  # ???
-    # abc_export_options[c4d.ABCEXPORT_STR_OPTIONS] = None  # ???
+    # options[c4d.ABCEXPORT_PARENTS_ONLY_MODE] = False
+    # options[c4d.ABCEXPORT_STR_ANIMATION] = None  # ???
+    # options[c4d.ABCEXPORT_STR_GENERAL] = None  # ???
+    # options[c4d.ABCEXPORT_STR_OPTIONS] = None  # ???
 
     if verbose:
-        export_options = kwargs.copy()
-        export_options["startFrame"] = frame_start
-        export_options["endFrame"] = frame_end
+        log_options = kwargs.copy()
+        log_options["frame_start"] = frame_start
+        log_options["frame_end"] = frame_end
         log.debug(
             "Preparing Alembic export with options: %s",
-            json.dumps(export_options, indent=4),
+            json.dumps(log_options, indent=4),
         )
 
     # Ensure output directory exists
@@ -164,75 +170,62 @@ def extract_alembic(filepath,
 def extract_fbx(filepath, verbose=False, **kwargs):
     """Extract a single fbx file."""
 
+
     doc = c4d.documents.GetActiveDocument()
-    fbx_plugin = c4d.plugins.FindPlugin(FBX_EXPORTER_ID, c4d.PLUGINTYPE_SCENESAVER)
-    if fbx_plugin is None:
-        raise Exception("Could not find FBX plug-in.")
-
-    options = {}
-    # Send MSG_RETRIEVEPRIVATEDATA to FBX export plugin
-    if fbx_plugin.Message(c4d.MSG_RETRIEVEPRIVATEDATA, options):
-        if "imexporter" not in options:
-            raise Exception("Could not find options container for the FBX exporter.")
-
-    # BaseList2D object stored in "imexporter" key hold the settings
-    fbx_export_options = options["imexporter"]
-    if fbx_export_options is None:
-        raise Exception("Could not find options for the FBX exporter.")
+    options = get_plugin_imexport_options(FBX_EXPORTER_ID,
+                                                     label="FBX")
 
     # File format
-    fbx_export_options[c4d.FBXEXPORT_FBX_VERSION] = kwargs.get("fbxVersion", 0)
-    fbx_export_options[c4d.FBXEXPORT_ASCII] = kwargs.get("fbxAscii", False)
+    options[c4d.FBXEXPORT_FBX_VERSION] = kwargs.get("fbxVersion", 0)
+    options[c4d.FBXEXPORT_ASCII] = kwargs.get("fbxAscii", False)
 
     # General
-    fbx_export_options[c4d.FBXEXPORT_SELECTION_ONLY] = kwargs.get(
-        "selectionOnly", False
-    )
-    fbx_export_options[c4d.FBXEXPORT_CAMERAS] = kwargs.get("cameras", True)
-    fbx_export_options[c4d.FBXEXPORT_SPLINES] = kwargs.get("splines", True)
-    fbx_export_options[c4d.FBXEXPORT_INSTANCES] = kwargs.get("instances", True)
-    fbx_export_options[c4d.FBXEXPORT_GLOBAL_MATRIX] = kwargs.get("globalMatrix", False)
-    fbx_export_options[c4d.FBXEXPORT_SDS] = kwargs.get("subdivisionSurfaces", True)
-    fbx_export_options[c4d.FBXEXPORT_LIGHTS] = kwargs.get("lights", True)
+    options[c4d.FBXEXPORT_SELECTION_ONLY] = kwargs.get("selectionOnly", False)
+    options[c4d.FBXEXPORT_CAMERAS] = kwargs.get("cameras", True)
+    options[c4d.FBXEXPORT_SPLINES] = kwargs.get("splines", True)
+    options[c4d.FBXEXPORT_INSTANCES] = kwargs.get("instances", True)
+    options[c4d.FBXEXPORT_GLOBAL_MATRIX] = kwargs.get("globalMatrix", False)
+    options[c4d.FBXEXPORT_SDS] = kwargs.get("subdivisionSurfaces", True)
+    options[c4d.FBXEXPORT_LIGHTS] = kwargs.get("lights", True)
 
     # Animation
-    fbx_export_options[c4d.FBXEXPORT_TRACKS] = kwargs.get("tracks", False)
-    fbx_export_options[c4d.FBXEXPORT_BAKE_ALL_FRAMES] = kwargs.get(
+    options[c4d.FBXEXPORT_TRACKS] = kwargs.get("tracks", False)
+    options[c4d.FBXEXPORT_BAKE_ALL_FRAMES] = kwargs.get(
         "bakeAllFrames", False
     )
-    fbx_export_options[c4d.FBXEXPORT_PLA_TO_VERTEXCACHE] = kwargs.get(
+    options[c4d.FBXEXPORT_PLA_TO_VERTEXCACHE] = kwargs.get(
         "plaToVertexCache", False
     )
 
     # Geometry
-    fbx_export_options[c4d.FBXEXPORT_SAVE_NORMALS] = kwargs.get("normals", False)
-    fbx_export_options[c4d.FBXEXPORT_SAVE_VERTEX_MAPS_AS_COLORS] = kwargs.get(
+    options[c4d.FBXEXPORT_SAVE_NORMALS] = kwargs.get("normals", False)
+    options[c4d.FBXEXPORT_SAVE_VERTEX_MAPS_AS_COLORS] = kwargs.get(
         "vertexMapsAsColors", False
     )
-    fbx_export_options[c4d.FBXEXPORT_SAVE_VERTEX_COLORS] = kwargs.get(
+    options[c4d.FBXEXPORT_SAVE_VERTEX_COLORS] = kwargs.get(
         "vertexColors", False
     )
-    fbx_export_options[c4d.FBXEXPORT_TRIANGULATE] = kwargs.get("triangulate", False)
-    fbx_export_options[c4d.FBXEXPORT_SDS_SUBDIVISION] = kwargs.get(
+    options[c4d.FBXEXPORT_TRIANGULATE] = kwargs.get("triangulate", False)
+    options[c4d.FBXEXPORT_SDS_SUBDIVISION] = kwargs.get(
         "bakedSubdivisionSurfaces", False
     )
-    fbx_export_options[c4d.FBXEXPORT_LOD_SUFFIX] = kwargs.get("lodSuffix", False)
+    options[c4d.FBXEXPORT_LOD_SUFFIX] = kwargs.get("lodSuffix", False)
 
     # Additional
     if hasattr(c4d, "FBXEXPORT_TEXTURES"):
         # Cinema4d S22 doesn't have this option anymore
-        fbx_export_options[c4d.FBXEXPORT_TEXTURES] = kwargs.get("textures", False)
+        options[c4d.FBXEXPORT_TEXTURES] = kwargs.get("textures", False)
     if hasattr(c4d, "FBXEXPORT_BAKE_MATERIALS"):
         # Cinema4d S22 now has the ability to bake materials
-        fbx_export_options[c4d.FBXEXPORT_BAKE_MATERIALS] = kwargs.get(
+        options[c4d.FBXEXPORT_BAKE_MATERIALS] = kwargs.get(
             "bakeMaterials", False
         )
-    fbx_export_options[c4d.FBXEXPORT_EMBED_TEXTURES] = kwargs.get(
+    options[c4d.FBXEXPORT_EMBED_TEXTURES] = kwargs.get(
         "embedTextures", False
     )
-    fbx_export_options[c4d.FBXEXPORT_FLIP_Z_AXIS] = kwargs.get("flipZAxis", False)
-    fbx_export_options[c4d.FBXEXPORT_SUBSTANCES] = kwargs.get("substances", False)
-    fbx_export_options[c4d.FBXEXPORT_UP_AXIS] = kwargs.get(
+    options[c4d.FBXEXPORT_FLIP_Z_AXIS] = kwargs.get("flipZAxis", False)
+    options[c4d.FBXEXPORT_SUBSTANCES] = kwargs.get("substances", False)
+    options[c4d.FBXEXPORT_UP_AXIS] = kwargs.get(
         "upAxis", c4d.FBXEXPORT_UP_AXIS_Y
     )
 
