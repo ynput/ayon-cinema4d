@@ -21,7 +21,7 @@ from .workio import (
 )
 import ayon_cinema4d
 
-from . import lib
+from . import lib, plugin
 
 log = logging.getLogger("ayon_cinema4d")
 
@@ -33,6 +33,7 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
 
 AYON_CONTAINERS = lib.AYON_CONTAINERS
+AYON_CONTEXT_CREATOR_IDENTIFIER = "io.ayon.create.context"
 
 
 class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
@@ -77,16 +78,31 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         with lib.maintained_selection():
             yield
 
+    def _get_context_node(self, create_if_not_exists=False):
+        doc = lib.active_document()
+        context_node = None
+        for creator_id, obj in plugin.iter_instance_objects(doc):
+            if creator_id == AYON_CONTEXT_CREATOR_IDENTIFIER:
+                context_node = obj
+
+        if context_node is None and create_if_not_exists:
+            context_node = plugin.create_selection([], name="AYON_context")
+
+        return context_node
+
     def update_context_data(self, data, changes):
-        # TODO: Implement
-        doc = c4d.documents.GetActiveDocument()
-        print(f"Imprint to {doc}")
+        if not data:
+            return
+
+        context_node = self._get_context_node(create_if_not_exists=True)
+        lib.imprint(context_node, data)
 
     def get_context_data(self):
-        # TODO: Implement
-        doc = c4d.documents.GetActiveDocument()
-        print(f"Get context data from {doc}")
-        return {}
+        context_node = self._get_context_node()
+        if context_node is None:
+            return {}
+
+        return lib.read(context_node)
 
 
 def parse_container(container):

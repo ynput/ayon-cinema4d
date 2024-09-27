@@ -16,6 +16,21 @@ if typing.TYPE_CHECKING:
     from typing import Optional, List
 
 
+def iter_instance_objects(doc):
+    instance_ids = {AYON_INSTANCE_ID, AVALON_INSTANCE_ID}
+
+    for obj in lib.iter_objects(doc.GetFirstObject()):
+        if lib.get_object_user_data_by_name(obj, "id") not in instance_ids:
+            continue
+
+        creator_id = lib.get_object_user_data_by_name(
+            obj, "creator_identifier")
+        if not creator_id:
+            continue
+
+        yield creator_id, obj
+
+
 def cache_instance_data(shared_data):
     """Cache instances for Creators shared data.
 
@@ -34,17 +49,7 @@ def cache_instance_data(shared_data):
     if shared_data.get('cinema4d_cached_instances') is None:
         cache = {}
         doc = lib.active_document()
-        instance_ids = {AYON_INSTANCE_ID, AVALON_INSTANCE_ID}
-
-        for obj in lib.iter_objects(doc.GetFirstObject()):
-            if lib.get_object_user_data_by_name(obj, "id") not in instance_ids:
-                continue
-
-            creator_id = lib.get_object_user_data_by_name(
-                obj, "creator_identifier")
-            if not creator_id:
-                continue
-
+        for creator_id, obj in iter_instance_objects(doc):
             cache.setdefault(creator_id, []).append(obj)
 
         shared_data["cinema4d_cached_instances"] = cache
