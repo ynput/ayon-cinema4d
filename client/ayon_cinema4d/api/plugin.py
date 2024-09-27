@@ -82,6 +82,21 @@ def create_selection(
         return container
 
 
+def parent_to_ayon_null(obj, doc=None):
+    # Find or create the root node
+    # TODO: Improve how we find the node to parent to instead of just assuming
+    #  it is the first node named "AYON"
+    doc = doc or lib.active_document()
+    root = doc.SearchObject("AYON")
+    if not root:
+        root = c4d.BaseList2D(c4d.Onull)
+        root.SetName("AYON")
+        doc.InsertObject(root)
+
+    obj.InsertUnder(root)
+    c4d.EventAdd()
+
+
 class Cinema4DCreator(Creator):
     default_variants = ['Main']
     settings_category = "cinema4d"
@@ -95,6 +110,7 @@ class Cinema4DCreator(Creator):
             nodes = doc.GetActiveObjects(c4d.GETACTIVEOBJECTFLAGS_CHILDREN)
 
         instance_node = create_selection(nodes, name=product_name)
+        parent_to_ayon_null(instance_node)
 
         # Enforce forward compatibility to avoid the instance to default
         # to the legacy `AVALON_INSTANCE_ID`

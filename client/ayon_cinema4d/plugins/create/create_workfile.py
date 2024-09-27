@@ -129,6 +129,7 @@ class CreateWorkfile(AutoCreator):
             node = created_inst.transient_data.get("instance_node")
             if not node:
                 node = plugin.create_selection([], name=self.node_name)
+                plugin.parent_to_ayon_null(node)
                 created_inst.transient_data["instance_node"] = node
 
             new_data = created_inst.data_to_store()

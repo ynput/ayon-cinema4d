@@ -87,6 +87,7 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
         if context_node is None and create_if_not_exists:
             context_node = plugin.create_selection([], name="AYON_context")
+            plugin.parent_to_ayon_null(context_node)
 
         return context_node
 
