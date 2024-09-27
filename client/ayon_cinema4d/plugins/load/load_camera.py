@@ -41,7 +41,9 @@ class CameraLoader(plugin.Cinema4DLoader):
         for obj in lib.iter_objects(camera_doc.GetFirstObject()):
             # Get internal camera data from the Alembic Generator
             data = {"res": None}
-            obj.Message(c4d.MSG_GETREALCAMERADATA, data)
+            if not obj.Message(c4d.MSG_GETREALCAMERADATA, data):
+                continue
+
             if data["res"] is not None:
                 camera_alembic = obj
                 break
