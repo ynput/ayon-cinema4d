@@ -67,7 +67,7 @@ class CollectInstances(pyblish.api.InstancePlugin):
 
         parents = []
         for node in nodes:
-            parent = node.obj.GetUp()
+            parent = node.GetUp()
             while parent:
                 parents.append(parent)
                 parent = parent.GetUp()
