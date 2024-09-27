@@ -35,8 +35,20 @@ class CameraLoader(plugin.Cinema4DLoader):
             | c4d.SCENEFILTER_DONTCORRECTOUTPUTFORMAT,
         )
 
+        # TODO: We should include the parent hierarchy of the loaded camera
+        #  to ensure the full correct transformations? As such, maybe we should
+        #  merge the full camera - and only make editable the camera objects
+        for obj in lib.iter_objects(camera_doc.GetFirstObject()):
+            # Get internal camera data from the Alembic Generator
+            data = {"res": None}
+            obj.Message(c4d.MSG_GETREALCAMERADATA, data)
+            if data["res"] is not None:
+                camera_alembic = obj
+                break
+        else:
+            raise RuntimeError(f"No camera found in {filepath}")
+
         # The camera should be the only object in the file
-        camera_alembic = camera_doc.GetFirstObject()
         result = c4d.utils.SendModelingCommand(
             command=c4d.MCOMMAND_MAKEEDITABLE,
             list=[camera_alembic],
