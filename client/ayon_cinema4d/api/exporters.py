@@ -272,7 +272,15 @@ def render_playblast(filepath,
 
     Args:
         filepath(str): The filepath to render the movie to.
-        doc (c4d.documents.BaseDocument)
+        frame_start (Optional[int]): Frame start.
+            Defaults to document start time if not provided.
+        frame_end (Optional[int]): Frame end.
+            Defaults to document end time if not provided.
+        fps (int): Frames per seconds.
+        width (int): Resolution width for the render.
+        height (int): Resolution height for the render.
+        doc (Optional[c4d.documents.BaseDocument]): Document to operate in.
+            Defaults to active document if not set.
 
     Returns:
         str: The filepath of the rendered movie.
