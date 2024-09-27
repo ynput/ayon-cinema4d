@@ -17,6 +17,8 @@ class CreateWorkfile(AutoCreator):
     product_type = "workfile"
     icon = "fa5.file"
 
+    node_name = "AYON_workfile"
+
     def create(self):
         """Create workfile instances."""
         workfile_instance = next(
@@ -126,9 +128,7 @@ class CreateWorkfile(AutoCreator):
             # If it has no node yet, then it's a new workfile instance
             node = created_inst.transient_data.get("instance_node")
             if not node:
-                name = lib.get_unique_namespace(
-                    created_inst.data["productName"])
-                node = plugin.create_selection([], name=name)
+                node = plugin.create_selection([], name=self.node_name)
                 created_inst.transient_data["instance_node"] = node
 
             new_data = created_inst.data_to_store()
