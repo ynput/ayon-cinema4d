@@ -106,7 +106,7 @@ class Cinema4DCreator(Creator):
         # Register the CreatedInstance
         doc = c4d.documents.GetActiveDocument()
         nodes = list()
-        if pre_create_data.get("useSelection"):
+        if pre_create_data.get("use_selection"):
             nodes = doc.GetActiveObjects(c4d.GETACTIVEOBJECTFLAGS_CHILDREN)
 
         instance_node = create_selection(nodes, name=product_name)
