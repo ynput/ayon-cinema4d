@@ -57,6 +57,8 @@ def reset_colorspace():
     #         _set_redshift_colorspace(video_post, colorspace, display, view)
     #     video_post = video_post.GetNext()
 
+    c4d.EventAdd()
+
 
 def _set_redshift_colorspace(video_post, colorspace, display, view):
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_RENDERING_COLORSPACE] = colorspace  # noqa: E501
