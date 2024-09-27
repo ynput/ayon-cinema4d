@@ -21,8 +21,8 @@ PLAYBLAST_SETTINGS = {
     "RDATA_FILMASPECT": 1.778,
     "RDATA_PIXELASPECT": 1,
     # Frame rate and range
-    "RDATA_FRAMERATE": 12,
-    "RDATA_FRAMESEQUENCE": c4d.RDATA_FRAMESEQUENCE_ALLFRAMES,
+    # "RDATA_FRAMERATE": 12,
+    # "RDATA_FRAMESEQUENCE": c4d.RDATA_FRAMESEQUENCE_ALLFRAMES,
     # "RDATA_FRAMEFROM": 0,
     # "RDATA_FRAMETO": 11,
     "RDATA_FRAMESTEP": 1,
@@ -261,7 +261,13 @@ def extract_fbx(filepath, verbose=False, **kwargs):
     return filepath
 
 
-def render_playblast(filepath, doc=None):
+def render_playblast(filepath,
+                     frame_start=None,
+                     frame_end=None,
+                     fps=None,
+                     width=1920,
+                     height=1080,
+                     doc=None):
     """Create a playblast of the given or active document.
 
     Args:
@@ -274,15 +280,33 @@ def render_playblast(filepath, doc=None):
 
     # Retrieves the current active render settings
     doc = doc or c4d.documents.GetActiveDocument()
+    doc_fps = doc.GetFps()
+    if fps is None:
+        fps = doc_fps
+    if frame_start is None:
+        frame_start = doc.GetMinTime().GetFrame(doc_fps)
+    if frame_end is None:
+        frame_end = doc.GetMaxTime().GetFrame(doc_fps)
+
     renderdata = doc.GetActiveRenderData().GetData()
     previous_render_engine = renderdata[c4d.RDATA_RENDERENGINE]
     renderdata[c4d.RDATA_RENDERENGINE] = c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE
 
     # Set render settings
-    for k, v in PLAYBLAST_SETTINGS.items():
-        renderdata[getattr(c4d, k)] = v
-        # renderdata[c4d.RDATA_FRAMEFROM] = c4d.BaseTime(0, doc.GetFps())
-        # renderdata[c4d.RDATA_FRAMETO] = c4d.BaseTime(11, doc.GetFps())
+    for attr, value in PLAYBLAST_SETTINGS.items():
+        renderdata[getattr(c4d, attr)] = value
+
+    # Set FPS and frame range
+    renderdata[c4d.RDATA_FRAMERATE] = fps
+    renderdata[c4d.RDATA_FRAMESEQUENCE] = c4d.RDATA_FRAMESEQUENCE_MANUAL
+    renderdata[c4d.RDATA_FRAMEFROM] = frame_start
+    renderdata[c4d.RDATA_FRAMETO] = frame_end
+
+    # Set resolution
+    renderdata[c4d.RDATA_XRES] = width
+    renderdata[c4d.RDATA_YRES] = height
+
+    renderdata[c4d.RDATA_ALPHACHANNEL] = True
 
     # TODO: Somehow figure out how to (temporarily) overwrite a video post,
     #    or add a new one and remove it afterwards.
@@ -291,13 +315,8 @@ def render_playblast(filepath, doc=None):
     # for k, v in HARDWARE_SETTINGS.items():
     #     hardware_vp[getattr(c4d, k)] = v
     # renderdata.InsertVideoPost(hardware_vp)
-
-    # prepare bitmap
-    xres = PLAYBLAST_SETTINGS["RDATA_XRES"]
-    yres = PLAYBLAST_SETTINGS["RDATA_YRES"]
-
     bmp = c4d.bitmaps.BaseBitmap()
-    bmp.Init(x=xres, y=yres, depth=24)
+    bmp.Init(x=width, y=height, depth=24)
     if bmp is None:
         raise RenderError(
             "An error occurred during rendering: could not create bitmap."
