@@ -2,6 +2,7 @@ import os
 import sys
 
 # For whatever reason Cinema4D does not add `PYTHONPATH` to `sys.path`
+# It also seems that e.g. `C4DPYTHONPATH310` does not do that either?
 for path in os.getenv("PYTHONPATH", "").split(os.pathsep):
     if path and path not in sys.path:
         sys.path.append(path)
