@@ -308,7 +308,7 @@ def get_siblings(obj, include_self=True):
     next_obj = obj.GetNext()
     while next_obj:
         result.append(next_obj)
-        next_obj = next_obj.GetPred()
+        next_obj = next_obj.GetNext()
 
     return result
 
