@@ -45,7 +45,6 @@ from ayon_cinema4d.api.commands import (
     reset_resolution,
     reset_colorspace
 )
-from ayon_core.pipeline.workfile import BuildWorkfile
 from ayon_core.tools.utils import host_tools
 
 
