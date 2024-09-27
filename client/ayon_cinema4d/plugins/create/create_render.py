@@ -14,6 +14,9 @@ class CreateRender(plugin.Cinema4DCreator):
     product_type = "render"
     icon = "eye"
 
+    # TODO: Enable this once it is implemented
+    enabled = False
+
     def get_instance_attr_defs(self):
         defs = lib.collect_animation_defs(self.create_context)
         return defs
