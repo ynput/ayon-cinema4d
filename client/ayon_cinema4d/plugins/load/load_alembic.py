@@ -46,6 +46,7 @@ class AlembicLoader(plugin.Cinema4DLoader):
         loaded_doc = self._load_file(filepath)
         nodes = []
         for obj in loaded_doc.GetObjects():
+            obj.Remove()  # remove from original document
             doc.InsertObject(obj, checknames=True)
             nodes.append(obj)
 
