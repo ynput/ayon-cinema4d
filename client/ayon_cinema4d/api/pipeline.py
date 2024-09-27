@@ -95,6 +95,8 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             return
 
         context_node = self._get_context_node(create_if_not_exists=True)
+        data["id"] = plugin.AYON_INSTANCE_ID
+        data["creator_identifier"] = AYON_CONTEXT_CREATOR_IDENTIFIER
         lib.imprint(context_node, data)
 
     def get_context_data(self):
@@ -102,7 +104,13 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         if context_node is None:
             return {}
 
-        return lib.read(context_node)
+        data = lib.read(context_node)
+
+        # Pop our custom data that we use to find the node again
+        data.pop("id", None)
+        data.pop("creator_identifier", None)
+
+        return data
 
 
 def parse_container(container):
