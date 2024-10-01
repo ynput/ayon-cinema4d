@@ -34,18 +34,18 @@ if "win" in sys.platform:
     add_dll_directory(dll_dir)
 
 
-import c4d
+import c4d  # noqa: E402
 
-from ayon_core.resources import get_resource
-from ayon_core.pipeline import install_host
-from ayon_cinema4d.api import Cinema4DHost
-from ayon_cinema4d.api.lib import get_main_window
+from ayon_core.resources import get_resource  # noqa: E402
+from ayon_core.pipeline import install_host  # noqa: E402
+from ayon_cinema4d.api import Cinema4DHost  # noqa: E402
+from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
     reset_frame_range,
     reset_resolution,
     reset_colorspace
-)
-from ayon_core.tools.utils import host_tools
+)  # noqa: E402
+from ayon_core.tools.utils import host_tools  # noqa: E402
 
 
 AYON_LOAD_ID = 1064311
