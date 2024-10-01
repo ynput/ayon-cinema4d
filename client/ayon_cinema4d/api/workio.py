@@ -2,11 +2,9 @@
 import os
 import c4d
 
-from ayon_core.pipeline import HOST_WORKFILE_EXTENSIONS
-
 
 def file_extensions():
-    return HOST_WORKFILE_EXTENSIONS["cinema4d"]
+    return [".c4d"]
 
 
 def has_unsaved_changes():
