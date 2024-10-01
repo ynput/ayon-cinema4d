@@ -9,10 +9,9 @@ from .lib import (
     set_frame_range_from_entity
 )
 
-log = logging.getLogger(__name__)
-
-
 import c4d
+
+log = logging.getLogger(__name__)
 
 REDSHIFT_RENDER_ENGINE_ID = 1036219
 
