@@ -15,7 +15,6 @@ client_dir = "ayon_cinema4d"
 # - addon with specified version range must exist to be able to use this addon
 ayon_required_addons = {
     "core": ">0.4.4",
-    "applications": ">1.0.1"
 }
 # Mapping of addon name to version requirements
 # - if addon is used in same bundle the version range must be valid
