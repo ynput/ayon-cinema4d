@@ -34,13 +34,9 @@ def iter_instance_objects(doc):
 def cache_instance_data(shared_data):
     """Cache instances for Creators shared data.
 
-    Create `blender_cached_instances` key when needed in shared data and
+    Create `cinema4d_cached_instances` key when needed in shared data and
     fill it with all collected instances from the scene under its
     respective creator identifiers.
-
-    If legacy instances are detected in the scene, create
-    `blender_cached_legacy_instances` key and fill it with
-    all legacy products from this family as a value.  # key or value?
 
     Args:
         shared_data(Dict[str, Any]): Shared data.
