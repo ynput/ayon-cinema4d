@@ -50,9 +50,9 @@ class ExtractAlembic(publish.Extractor):
             )
 
         representation = {
-            'name': 'abc',
-            'ext': 'abc',
-            'files': filename,
+            "name": "abc",
+            "ext": "abc",
+            "files": filename,
             "stagingDir": dir_path,
         }
         instance.data.setdefault("representations", []).append(representation)

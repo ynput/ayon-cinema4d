@@ -13,7 +13,7 @@ class CollectWorkfileData(pyblish.api.InstancePlugin):
         """Inject the current working file"""
 
         context = instance.context
-        current_file = context.data['currentFile']
+        current_file = context.data["currentFile"]
         folder, file = os.path.split(current_file)
         filename, ext = os.path.splitext(file)
 

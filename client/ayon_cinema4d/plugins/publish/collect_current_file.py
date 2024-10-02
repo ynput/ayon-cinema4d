@@ -7,7 +7,7 @@ class CollectCinema4DCurrentFile(pyblish.api.ContextPlugin):
 
     order = pyblish.api.CollectorOrder - 0.5
     label = "Cinema4D Current File"
-    hosts = ['cinema4d']
+    hosts = ["cinema4d"]
 
     def process(self, context):
         """Inject the current working file"""
