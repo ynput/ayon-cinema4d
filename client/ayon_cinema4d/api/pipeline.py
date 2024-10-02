@@ -71,7 +71,7 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         return file_extensions()
 
     def get_containers(self):
-        return ls()
+        return iter_containers()
 
     @contextlib.contextmanager
     def maintained_selection(self):
@@ -136,7 +136,7 @@ def parse_container(container):
     return data
 
 
-def ls(doc=None):
+def iter_containers(doc=None):
     """Yield all objects in the active document that have 'id' attribute set
     matching an AYON container ID"""
     doc = doc or c4d.documents.GetActiveDocument()
