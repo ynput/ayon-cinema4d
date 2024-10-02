@@ -12,7 +12,7 @@ class CreateWorkfile(AutoCreator):
     instance node of its own.
 
     """
-    identifier = "io.ayon.creators.blender.workfile"
+    identifier = "io.ayon.creators.cinema4d.workfile"
     label = "Workfile"
     product_type = "workfile"
     icon = "fa5.file"
