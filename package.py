@@ -5,6 +5,7 @@ version = "0.1.0"
 # Name of client code directory imported in AYON launcher
 # - do not specify if there is no client code
 client_dir = "ayon_cinema4d"
+app_host_name = "cinema4d"
 
 # Version compatibility with AYON server
 # ayon_server_version = ">=1.0.7"
