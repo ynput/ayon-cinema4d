@@ -62,7 +62,7 @@ AYON_EXPERIMENTAL_TOOLS_ID = 1064319
 
 
 def get_icon_by_name(name):
-    """Return OpenPype icon"""
+    """Get icon full path"""
     return get_resource("icons", "{}.png".format(name))
 
 

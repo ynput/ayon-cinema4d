@@ -35,9 +35,9 @@ class ExtractReview(publish.Extractor):
         )
 
         representation = {
-            'name': 'mp4',
-            'ext': 'mp4',
-            'files': filename,
+            "name": "mp4",
+            "ext": "mp4",
+            "files": filename,
             "stagingDir": dir_path,
         }
         instance.data.setdefault("representations", []).append(representation)
