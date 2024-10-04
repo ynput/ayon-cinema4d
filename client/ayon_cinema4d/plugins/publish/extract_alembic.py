@@ -46,7 +46,9 @@ class ExtractAlembic(publish.Extractor):
                 frame_step=step,
                 selection=True,
                 global_matrix=bake_to_worldspace,
-                doc=doc
+                doc=doc,
+                # Log the applied options to the publish logs
+                verbose=True
             )
 
         representation = {
