@@ -94,60 +94,69 @@ def extract_alembic(filepath,
     # Set export options
     options = get_plugin_imexport_options(c4d.FORMAT_ABCEXPORT,
                                           label="Alembic")
-    # Animation
-    options[c4d.ABCEXPORT_FRAME_START] = frame_start
-    options[c4d.ABCEXPORT_FRAME_END] = frame_end
-    options[c4d.ABCEXPORT_FRAME_STEP] = frame_step
-    options[c4d.ABCEXPORT_SUBFRAMES] = sub_frames
 
-    # General
-    # options[c4d.ABCEXPORT_SCALE] = 1  # c4d.UnitScaleData
-    options[c4d.ABCEXPORT_SELECTION_ONLY] = selection
-    options[c4d.ABCEXPORT_CAMERAS] = kwargs.get("cameras", True)
-    options[c4d.ABCEXPORT_SPLINES] = kwargs.get("splines", False)
-    options[c4d.ABCEXPORT_HAIR] = kwargs.get("hair", False)
-    options[c4d.ABCEXPORT_XREFS] = kwargs.get("xrefs", True)
-    options[c4d.ABCEXPORT_GLOBAL_MATRIX] = global_matrix
+    applied_options = {
+        # Animation
+        "ABCEXPORT_FRAME_START": frame_start,
+        "ABCEXPORT_FRAME_END": frame_end,
+        "ABCEXPORT_FRAME_STEP": frame_step,
+        "ABCEXPORT_SUBFRAMES": sub_frames,
 
-    # Subdivision surface
-    options[c4d.ABCEXPORT_HYPERNURBS] = kwargs.get(
-        "subdivisionSurfaces", True
-    )
-    options[c4d.ABCEXPORT_SDS_WEIGHTS] = kwargs.get(
-        "subdivisionSurfaceWeights", False
-    )
-    options[c4d.ABCEXPORT_PARTICLES] = kwargs.get("particles", False)
-    options[c4d.ABCEXPORT_PARTICLE_GEOMETRY] = kwargs.get(
-        "particleGeometry", False
-    )
+        # General
+        # "ABCEXPORT_SCALE": 1  # "UnitScaleData
+        "ABCEXPORT_SELECTION_ONLY": selection,
+        "ABCEXPORT_CAMERAS": kwargs.get("cameras", True),
+        "ABCEXPORT_SPLINES": kwargs.get("splines", False),
+        "ABCEXPORT_HAIR": kwargs.get("hair", False),
+        "ABCEXPORT_XREFS": kwargs.get("xrefs", True),
+        "ABCEXPORT_GLOBAL_MATRIX": global_matrix,
 
-    # Optional data
-    options[c4d.ABCEXPORT_VISIBILITY] = kwargs.get("visibility", True)
-    options[c4d.ABCEXPORT_UVS] = kwargs.get("uvs", True)
-    options[c4d.ABCEXPORT_VERTEX_MAPS] = kwargs.get("vertexMaps", False)
-    # Vertex normals
-    options[c4d.ABCEXPORT_NORMALS] = kwargs.get("normals", False)
-    options[c4d.ABCEXPORT_POLYGONSELECTIONS] = kwargs.get("polygonSelections", True)  # noqa: E501
-    options[c4d.ABCEXPORT_VERTEX_COLORS] = kwargs.get("vertexColors", False)
-    options[c4d.ABCEXPORT_POINTS_ONLY] = kwargs.get("pointsOnly", False)
-    options[c4d.ABCEXPORT_DISPLAY_COLORS] = kwargs.get("displayColors", False)
-    options[c4d.ABCEXPORT_MERGE_CACHE] = kwargs.get("mergeCache", False)
+        # Subdivision surface
+        "ABCEXPORT_HYPERNURBS": kwargs.get(
+            "subdivisionSurfaces", True
+        ),
+        "ABCEXPORT_SDS_WEIGHTS": kwargs.get(
+            "subdivisionSurfaceWeights", False
+        ),
+        "ABCEXPORT_PARTICLES": kwargs.get("particles", False),
+        "ABCEXPORT_PARTICLE_GEOMETRY": kwargs.get(
+            "particleGeometry", False
+        ),
 
-    # options[c4d.ABCEXPORT_GROUP] = None  # ???
-    # # Don't export child objects with only selected?
-    # options[c4d.ABCEXPORT_PARENTS_ONLY_MODE] = False
-    # options[c4d.ABCEXPORT_STR_ANIMATION] = None  # ???
-    # options[c4d.ABCEXPORT_STR_GENERAL] = None  # ???
-    # options[c4d.ABCEXPORT_STR_OPTIONS] = None  # ???
+        # Optional data
+        "ABCEXPORT_VISIBILITY": kwargs.get("visibility", True),
+        "ABCEXPORT_UVS": kwargs.get("uvs", True),
+        "ABCEXPORT_VERTEX_MAPS": kwargs.get("vertexMaps", False),
 
+        # Vertex normals
+        "ABCEXPORT_NORMALS": kwargs.get("normals", False),
+        "ABCEXPORT_POLYGONSELECTIONS": kwargs.get("polygonSelections", True),
+        "ABCEXPORT_VERTEX_COLORS": kwargs.get("vertexColors", False),
+        "ABCEXPORT_POINTS_ONLY": kwargs.get("pointsOnly", False),
+        "ABCEXPORT_DISPLAY_COLORS": kwargs.get("displayColors", False),
+        "ABCEXPORT_MERGE_CACHE": kwargs.get("mergeCache", False)
+
+        # "ABCEXPORT_GROUP": None,  # ???
+        # # Don't export child objects with only selected?
+        # "ABCEXPORT_PARENTS_ONLY_MODE": False,
+        # "ABCEXPORT_STR_ANIMATION": None,  # ???
+        # "ABCEXPORT_STR_GENERAL": None,  # ???
+        # "ABCEXPORT_STR_OPTIONS": None,  # ???
+    }
     if verbose:
-        log_options = kwargs.copy()
-        log_options["frame_start"] = frame_start
-        log_options["frame_end"] = frame_end
         log.debug(
             "Preparing Alembic export with options: %s",
-            json.dumps(log_options, indent=4),
+            json.dumps(applied_options, indent=4),
         )
+
+    for key, value in applied_options.items():
+        key_id = getattr(c4d, key)
+        # There appears to be a bug where if the value is just set directly
+        # that it fails to apply them for the export, e.g. still exporting the
+        # whole scene even though `c4d.ABCEXPORT_SELECTION_ONLY` is True.
+        # See: https://developers.maxon.net/forum/topic/12767/alembic-export-options-not-working/6  # noqa: E501
+        options[key_id] = not value
+        options[key_id] = value
 
     # Ensure output directory exists
     parent_dir = os.path.dirname(filepath)
