@@ -2,11 +2,10 @@ import attr
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.publish import RenderInstance
 
 
 @attr.s
-class Cinema4DRenderInstance(RenderInstance):
+class Cinema4DRenderInstance(publish.RenderInstance):
     # extend generic, composition name is needed
     fps = attr.ib(default=None)
     projectEntity = attr.ib(default=None)
