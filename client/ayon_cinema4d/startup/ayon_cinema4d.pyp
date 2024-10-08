@@ -37,7 +37,11 @@ if "win" in sys.platform:
 import c4d  # noqa: E402
 
 from ayon_core.resources import get_resource  # noqa: E402
-from ayon_core.pipeline import install_host  # noqa: E402
+from ayon_core.pipeline import (
+    install_host,
+    get_current_folder_path,
+    get_current_task_name
+)
 from ayon_cinema4d.api import Cinema4DHost  # noqa: E402
 from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
@@ -202,6 +206,7 @@ def install_menu():
     """Register the OpenPype menu with Cinema4D"""
     main_menu = c4d.gui.GetMenuResource("M_EDITOR")
     plugins_menu = c4d.gui.SearchPluginMenuResource()
+    ayon_context = "{}, {}".format(get_current_folder_path(), get_current_task_name())
 
     def add_command(_menu, plugin):
         _menu.InsData(c4d.MENURESOURCE_COMMAND, f"PLUGIN_CMD_{plugin.id}")
@@ -210,6 +215,8 @@ def install_menu():
     menu.InsData(c4d.MENURESOURCE_SUBTITLE, "AYON")
 
     # Define menu commands
+    menu.InsData(c4d.MENURESOURCE_SUBTITLE, ayon_context)
+    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
     add_command(menu, Publish)
