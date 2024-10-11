@@ -8,7 +8,7 @@ class LoadVDBToRedshift(plugin.Cinema4DSingleObjLoader):
 
     color = "orange"
     product_types = {"*"}
-    icon = "file-video-o"
+    icon = "cloud"
     label = "Load VDB to Redshift"
     order = -10
     representations = {"vdb"}

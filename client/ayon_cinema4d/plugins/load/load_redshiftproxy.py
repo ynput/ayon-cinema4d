@@ -8,7 +8,7 @@ class RedshiftProxyLoader(plugin.Cinema4DSingleObjLoader):
 
     color = "orange"
     product_types = {"*"}
-    icon = "file-video-o"
+    icon = "code-fork"
     label = "Load Redshift Proxy"
     order = -10
     representations = {"rs"}
