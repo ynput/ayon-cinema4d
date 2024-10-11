@@ -8,7 +8,6 @@ import pyblish.api
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_core.pipeline import (
     register_loader_plugin_path,
-    register_inventory_action_path,
     register_creator_plugin_path,
     AYON_CONTAINER_ID,
 )
