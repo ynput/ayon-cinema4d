@@ -52,7 +52,8 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
-        register_inventory_action_path(INVENTORY_PATH)
+        # TODO: Register only when any inventory actions are created
+        # register_inventory_action_path(INVENTORY_PATH)
         self.log.info(PUBLISH_PATH)
 
     def open_workfile(self, filepath):
