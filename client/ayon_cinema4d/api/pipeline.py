@@ -8,7 +8,6 @@ import pyblish.api
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_core.pipeline import (
     register_loader_plugin_path,
-    register_inventory_action_path,
     register_creator_plugin_path,
     AYON_CONTAINER_ID,
 )
@@ -52,7 +51,8 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
-        register_inventory_action_path(INVENTORY_PATH)
+        # TODO: Register only when any inventory actions are created
+        # register_inventory_action_path(INVENTORY_PATH)
         self.log.info(PUBLISH_PATH)
 
     def open_workfile(self, filepath):
@@ -140,7 +140,7 @@ def iter_containers(doc=None):
     """Yield all objects in the active document that have 'id' attribute set
     matching an AYON container ID"""
     doc = doc or c4d.documents.GetActiveDocument()
-    containers = lib.get_objects_by_type("Selection", doc.GetFirstObject(), [])
+    containers = lib.iter_objects(doc.GetFirstObject())
     for container in containers:
         if lib.get_object_user_data_by_name(container, "id") != AYON_CONTAINER_ID:  # noqa
             continue
@@ -220,16 +220,14 @@ def containerise(name,
         doc = lib.active_document()
         doc.InsertObject(container)
 
-        data = {
-            "schema": "ayon:container-3.0",
-            "id": AYON_CONTAINER_ID,
-            "name": name,
-            "namespace": namespace,
-            "loader": str(loader),
-            "representation": str(context["representation"]["id"]),
-        }
+        imprint_container(
+            container,
+            name,
+            namespace,
+            context,
+            loader=None
+        )
 
-        lib.imprint(container, data, group="AYON")
         # Add the container to the AYON_CONTAINERS layer
         avalon_layer = get_containers_layer(doc=doc)
         container.SetLayerObject(avalon_layer)
@@ -238,3 +236,31 @@ def containerise(name,
         c4d.EventAdd()
 
     return container
+
+
+def imprint_container(
+    container,
+    name,
+    namespace,
+    context,
+    loader=None
+):
+    """Imprints an object with container metadata and hides it from the user
+    by adding it into a hidden layer.
+    Arguments:
+        container (c4d.BaseObject): The object to imprint.
+        name (str): Name of resulting assembly
+        namespace (str): Namespace under which to host container
+        context (dict): Asset information
+        loader (str, optional): Name of loader used to produce this container.
+    """
+    data = {
+        "schema": "ayon:container-3.0",
+        "id": AYON_CONTAINER_ID,
+        "name": name,
+        "namespace": namespace,
+        "loader": str(loader),
+        "representation": str(context["representation"]["id"]),
+    }
+
+    lib.imprint(container, data, group="AYON")

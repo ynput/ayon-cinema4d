@@ -8,7 +8,7 @@ class AlembicLoader(plugin.Cinema4DLoader):
 
     color = "orange"
     product_types = {"*"}
-    icon = "file-video-o"
+    icon = "code-fork"
     label = "Load Alembic"
     order = -10
     representations = {"abc"}

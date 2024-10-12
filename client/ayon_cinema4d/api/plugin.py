@@ -1,5 +1,7 @@
-import c4d
+from abc import ABC, abstractmethod
 import typing
+
+import c4d
 
 from ayon_core.pipeline import (
     Creator,
@@ -10,10 +12,12 @@ from ayon_core.pipeline import (
 )
 from ayon_core.lib import BoolDef
 
+from ayon_cinema4d.api import pipeline
+
 from . import lib
 
 if typing.TYPE_CHECKING:
-    from typing import Optional, List
+    from typing import Optional, List, Tuple, Union
 
 
 def iter_instance_objects(doc):
@@ -204,5 +208,95 @@ class Cinema4DLoader(LoaderPlugin):
         container_node = container["node"]
         for obj in lib.get_objects_from_container(container_node):
             obj.Remove()
+        container_node.Remove()
+        c4d.EventAdd()
+
+
+class Cinema4DSingleObjLoader(Cinema4DLoader, ABC):
+    """Base Loader plug-in that manages a single Cinema4D object with a
+    filepath parameter.
+
+    Instead of containerizing on a hidden selection object this imprints the
+    node itself as a container."""
+
+    @property
+    @abstractmethod
+    def _node_type_id(self) -> int:
+        """The node type id to create and manage."""
+        pass
+
+    @property
+    @abstractmethod
+    def _filepath_attribute(self) -> "Union[int, Tuple[int, int]]":
+        """Return the id for the filepath attribute on the node type.
+
+        This is usually an `int` constant, but for some nodes like Redshift
+        Proxies these are a tuple of two ids.
+
+        """
+        pass
+
+    def set_obj_for_context(self, obj, context, is_update=False):
+        """Update the object for the new context. This will be called on load
+        and update to configure the object for the new context, like setting
+        the filepath.
+
+        This can be inherited on child classes to do additional things on load
+        or update.
+
+        Arguments:
+            obj (c4d.BaseObject): The managed object.
+            context (dict[str, Any]): The full representation context.
+            is_update (bool): Whether this is part of an `update` call or
+                first `load`.
+
+        """
+        filepath = self.filepath_from_context(context)
+        obj[self._filepath_attribute] = filepath
+
+    def load(self, context, name=None, namespace=None, options=None):
+
+        doc = lib.active_document()
+
+        name, namespace = self.get_name_and_namespace(
+            context, name, namespace, doc=doc)
+
+        # Create object
+        obj = c4d.BaseObject(self._node_type_id)
+        obj.SetName(name)
+        doc.InsertObject(obj)
+
+        self.set_obj_for_context(obj, context)
+
+        container = pipeline.imprint_container(
+            obj,
+            name=str(name),
+            namespace=str(namespace),
+            context=context,
+            loader=str(self.__class__.__name__),
+        )
+
+        c4d.EventAdd()
+
+        return container
+
+    def update(self, container, context):
+
+        obj = container["node"]
+
+        # Update filepath
+        if obj.CheckType(self._node_type_id):
+            self.set_obj_for_context(obj, context)
+
+        # Update representation id
+        for i, base_container in obj.GetUserDataContainer():
+            if base_container[c4d.DESC_NAME] == "representation":
+                obj[i] = context["representation"]["id"]
+
+        c4d.EventAdd()
+
+    def remove(self, container):
+        """Remove all sub containers"""
+        container_node = container["node"]
         container_node.Remove()
         c4d.EventAdd()

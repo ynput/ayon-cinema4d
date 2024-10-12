@@ -366,6 +366,11 @@ def get_objects_from_container(container, existing_only=True):
     doc: c4d.documents.BaseDocument = container.GetMain()
     assert isinstance(doc, c4d.documents.BaseDocument)
     in_exclude_data = container[c4d.SELECTIONOBJECT_LIST]
+
+    # If the container is not a selection object list yield no child objects
+    if not in_exclude_data:
+        return
+
     object_count = in_exclude_data.GetObjectCount()
     for i in range(object_count):
         obj = in_exclude_data.ObjectFromIndex(doc, i)
