@@ -5,7 +5,7 @@ from ayon_core.pipeline import publish
 from ayon_cinema4d.api import exporters
 
 
-class ExtractReview(publish.Extractor):
+class Cinema4DExtractReview(publish.Extractor):
 
     label = "Render Review"
     hosts = ["cinema4d"]
