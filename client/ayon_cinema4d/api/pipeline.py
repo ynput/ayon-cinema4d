@@ -242,7 +242,7 @@ def imprint_container(
     name,
     namespace,
     context,
-        loader
+    loader
 ):
     """Imprints an object with container metadata and hides it from the user
     by adding it into a hidden layer.
