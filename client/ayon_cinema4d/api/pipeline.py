@@ -184,7 +184,7 @@ def containerise(name,
                  namespace,
                  nodes,
                  context,
-                 loader=None,
+                 loader,
                  suffix="_CON"):
     """Bundle `nodes` into an assembly and imprint it with metadata
 
@@ -196,7 +196,7 @@ def containerise(name,
         namespace (str): Namespace under which to host container
         nodes (list): Long names of nodes to containerise
         context (dict): Asset information
-        loader (str, optional): Name of loader used to produce this container.
+        loader (str): Name of loader used to produce this container.
         suffix (str, optional): Suffix of container, defaults to `_CON`.
 
     Returns:
@@ -209,7 +209,6 @@ def containerise(name,
         prefix=namespace + "_",
         suffix=suffix
     )
-
     with lib.undo_chunk():
         container = c4d.BaseObject(c4d.Oselection)
         container.SetName(container_name)
@@ -225,7 +224,7 @@ def containerise(name,
             name,
             namespace,
             context,
-            loader=None
+            loader
         )
 
         # Add the container to the AYON_CONTAINERS layer
@@ -243,7 +242,7 @@ def imprint_container(
     name,
     namespace,
     context,
-    loader=None
+    loader
 ):
     """Imprints an object with container metadata and hides it from the user
     by adding it into a hidden layer.
@@ -252,7 +251,7 @@ def imprint_container(
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host container
         context (dict): Asset information
-        loader (str, optional): Name of loader used to produce this container.
+        loader (str): Name of loader used to produce this container.
     """
     data = {
         "schema": "ayon:container-3.0",
