@@ -64,6 +64,8 @@ AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
 
+AYON_CONTEXT_LABEL = 1064309
+
 
 def get_icon_by_name(name):
     """Get icon full path"""
@@ -202,11 +204,15 @@ class ExperimentalTools(c4d.plugins.CommandData):
         return True
 
 
+class CONTEXTLABEL(c4d.plugins.CommandData):
+    id = AYON_CONTEXT_LABEL
+    label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
+
+
 def install_menu():
     """Register the OpenPype menu with Cinema4D"""
     main_menu = c4d.gui.GetMenuResource("M_EDITOR")
     plugins_menu = c4d.gui.SearchPluginMenuResource()
-    ayon_context = "{}, {}".format(get_current_folder_path(), get_current_task_name())
 
     def add_command(_menu, plugin):
         _menu.InsData(c4d.MENURESOURCE_COMMAND, f"PLUGIN_CMD_{plugin.id}")
@@ -221,8 +227,9 @@ def install_menu():
     menuresource_separator = 2
 
     # Define menu commands
-    menu.InsData(c4d.MENURESOURCE_SUBTITLE, ayon_context)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+
+    add_command(menu, CONTEXTLABEL)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
     add_command(menu, Publish)
@@ -279,6 +286,7 @@ if __name__ == '__main__':
         ResetColorspace,
         # BuildWorkFileCommand,
         ExperimentalTools,
+        CONTEXTLABEL,
     ]:
         c4d.plugins.RegisterCommandPlugin(
             id=command_plugin.id,
