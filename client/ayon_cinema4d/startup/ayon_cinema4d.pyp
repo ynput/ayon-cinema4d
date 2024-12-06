@@ -37,7 +37,11 @@ if "win" in sys.platform:
 import c4d  # noqa: E402
 
 from ayon_core.resources import get_resource  # noqa: E402
-from ayon_core.pipeline import install_host  # noqa: E402
+from ayon_core.pipeline import (
+    install_host,
+    get_current_folder_path,
+    get_current_task_name
+)
 from ayon_cinema4d.api import Cinema4DHost  # noqa: E402
 from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
@@ -59,6 +63,8 @@ AYON_RESET_FRAME_RANGE_ID = 1064317
 AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
+
+AYON_CONTEXT_LABEL = 1064309
 
 
 def get_icon_by_name(name):
@@ -198,6 +204,11 @@ class ExperimentalTools(c4d.plugins.CommandData):
         return True
 
 
+class CONTEXTLABEL(c4d.plugins.CommandData):
+    id = AYON_CONTEXT_LABEL
+    label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
+
+
 def install_menu():
     """Register the OpenPype menu with Cinema4D"""
     main_menu = c4d.gui.GetMenuResource("M_EDITOR")
@@ -216,6 +227,9 @@ def install_menu():
     menuresource_separator = 2
 
     # Define menu commands
+
+    add_command(menu, CONTEXTLABEL)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
     add_command(menu, Publish)
@@ -272,6 +286,7 @@ if __name__ == '__main__':
         ResetColorspace,
         # BuildWorkFileCommand,
         ExperimentalTools,
+        CONTEXTLABEL,
     ]:
         c4d.plugins.RegisterCommandPlugin(
             id=command_plugin.id,
