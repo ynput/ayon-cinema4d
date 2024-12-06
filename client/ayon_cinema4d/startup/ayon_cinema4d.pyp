@@ -214,6 +214,12 @@ def install_menu():
     menu = c4d.BaseContainer()
     menu.InsData(c4d.MENURESOURCE_SUBTITLE, "AYON")
 
+    # Bugfix: Using hardcoded int because Maxon renamed the
+    # `c4d.MENURESOURCE_SEPERATOR` to `c4d.MENURESOURCE_SEPARATOR`
+    # and this saves us the version checks
+    # See: http://developers.maxon.net/forum//post/72528
+    menuresource_separator = 2
+
     # Define menu commands
     menu.InsData(c4d.MENURESOURCE_SUBTITLE, ayon_context)
     menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
@@ -222,13 +228,13 @@ def install_menu():
     add_command(menu, Publish)
     add_command(menu, Manage)
     add_command(menu, Library)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, Workfiles)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, ResetFrameRange)
     add_command(menu, ResetSceneResolution)
     add_command(menu, ResetColorspace)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     # add_command(menu, BuildWorkFileCommand)
     add_command(menu, ExperimentalTools)
 
