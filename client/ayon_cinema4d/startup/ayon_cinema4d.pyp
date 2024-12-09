@@ -204,7 +204,7 @@ class ExperimentalTools(c4d.plugins.CommandData):
         return True
 
 
-class CONTEXTLABEL(c4d.plugins.CommandData):
+class ContextLabel(c4d.plugins.CommandData):
     id = AYON_CONTEXT_LABEL
     label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
 
@@ -228,7 +228,7 @@ def install_menu():
 
     # Define menu commands
 
-    add_command(menu, CONTEXTLABEL)
+    add_command(menu, ContextLabel)
     menu.InsData(menuresource_separator, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
@@ -286,7 +286,7 @@ if __name__ == '__main__':
         ResetColorspace,
         # BuildWorkFileCommand,
         ExperimentalTools,
-        CONTEXTLABEL,
+        ContextLabel,
     ]:
         c4d.plugins.RegisterCommandPlugin(
             id=command_plugin.id,
