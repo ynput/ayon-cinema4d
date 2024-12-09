@@ -5,8 +5,14 @@ import contextlib
 import c4d
 import pyblish.api
 
+from ayon_core.lib import (
+    register_event_callback,
+    is_headless_mode_enabled
+)
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_core.pipeline import (
+    get_current_folder_path,
+    get_current_task_name,
     register_loader_plugin_path,
     register_creator_plugin_path,
     AYON_CONTAINER_ID,
@@ -54,6 +60,8 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # TODO: Register only when any inventory actions are created
         # register_inventory_action_path(INVENTORY_PATH)
         self.log.info(PUBLISH_PATH)
+
+        register_event_callback("taskChanged", on_task_changed)
 
     def open_workfile(self, filepath):
         return open_file(filepath)
@@ -263,3 +271,14 @@ def imprint_container(
     }
 
     lib.imprint(container, data, group="AYON")
+
+
+def on_task_changed():
+
+    if not is_headless_mode_enabled():
+        # Get AYON Context menu command plugin (menu item) by its unique id.
+        ayon_context = c4d.plugins.FindPlugin(1064692)
+        # Update its value with the new context.
+        ayon_context.SetName(
+            "{}, {}".format(get_current_folder_path(), get_current_task_name())
+        )
