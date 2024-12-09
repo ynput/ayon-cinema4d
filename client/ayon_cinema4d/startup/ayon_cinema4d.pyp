@@ -64,7 +64,7 @@ AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
 
-AYON_CONTEXT_LABEL = 1064692
+AYON_CONTEXT_LABEL_ID = 1064692
 
 
 def get_icon_by_name(name):
@@ -211,7 +211,7 @@ class ExperimentalTools(c4d.plugins.CommandData):
 
 
 class ContextLabel(c4d.plugins.CommandData):
-    id = AYON_CONTEXT_LABEL
+    id = AYON_CONTEXT_LABEL_ID
     label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
     icon = get_ayon_icon_bitmap()
 
