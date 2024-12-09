@@ -36,7 +36,7 @@ if "win" in sys.platform:
 
 import c4d  # noqa: E402
 
-from ayon_core.resources import get_resource  # noqa: E402
+from ayon_core.resources import get_resource, get_ayon_icon_filepath  # noqa: E402
 from ayon_core.pipeline import (
     install_host,
     get_current_folder_path,
@@ -75,6 +75,12 @@ def get_icon_by_name(name):
 def get_icon_bitmap_by_name(name):
     bitmap = c4d.bitmaps.BaseBitmap()
     bitmap.InitWith(get_icon_by_name(name))
+    return bitmap
+
+
+def get_ayon_icon_bitmap():
+    bitmap = c4d.bitmaps.BaseBitmap()
+    bitmap.InitWith(get_ayon_icon_filepath())
     return bitmap
 
 
@@ -207,6 +213,7 @@ class ExperimentalTools(c4d.plugins.CommandData):
 class ContextLabel(c4d.plugins.CommandData):
     id = AYON_CONTEXT_LABEL
     label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
+    icon = get_ayon_icon_bitmap()
 
 
 def install_menu():
