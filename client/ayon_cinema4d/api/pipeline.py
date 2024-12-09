@@ -276,7 +276,7 @@ def imprint_container(
 def on_task_changed():
 
     if not is_headless_mode_enabled():
-        # Get AYON Context manu command plugin (menu item) by its unique id.
+        # Get AYON Context menu command plugin (menu item) by its unique id.
         ayon_context = c4d.plugins.FindPlugin(1064309)
         # Update its value with the new context.
         ayon_context.SetName(
