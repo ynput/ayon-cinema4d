@@ -210,7 +210,7 @@ class ContextLabel(c4d.plugins.CommandData):
 
 
 def install_menu():
-    """Register the OpenPype menu with Cinema4D"""
+    """Register the AYON menu with Cinema4D"""
     main_menu = c4d.gui.GetMenuResource("M_EDITOR")
     plugins_menu = c4d.gui.SearchPluginMenuResource()
 
