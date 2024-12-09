@@ -277,7 +277,7 @@ def on_task_changed():
 
     if not is_headless_mode_enabled():
         # Get AYON Context menu command plugin (menu item) by its unique id.
-        ayon_context = c4d.plugins.FindPlugin(1064309)
+        ayon_context = c4d.plugins.FindPlugin(1064692)
         # Update its value with the new context.
         ayon_context.SetName(
             "{}, {}".format(get_current_folder_path(), get_current_task_name())
