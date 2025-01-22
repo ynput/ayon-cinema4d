@@ -467,10 +467,29 @@ def set_resolution_from_entity(task_entity, doc=None):
     attrib = task_entity["attrib"]
     width: int = int(attrib["resolutionWidth"])
     height: int = int(attrib["resolutionHeight"])
+    pixel_aspect: float = attrib["pixelAspect"]
+
+    @contextlib.contextmanager
+    def _unlocked_ratio(render_data):
+        """Temporarily unlock the ratio of the render resolution."""
+        original = render_data[c4d.RDATA_LOCKRATIO]
+        render_data[c4d.RDATA_LOCKRATIO] = False
+        try:
+            yield
+        finally:
+            render_data[c4d.RDATA_LOCKRATIO] = original
 
     rd = doc.GetFirstRenderData()
     while rd:
-        rd[c4d.RDATA_XRES] = width
-        rd[c4d.RDATA_YRES] = height
+        # Fix #20: Set the virtual resolution with user interaction so Redshift
+        # still triggers some additional checks on the attribute change.
+        with _unlocked_ratio(rd):
+            flag = c4d.DESCFLAGS_SET_USERINTERACTION
+            rd.SetParameter(c4d.RDATA_XRES_VIRTUAL, width, flag)
+            rd.SetParameter(c4d.RDATA_YRES_VIRTUAL, height, flag)
+
+        # Set pixel aspect ratio
+        rd[c4d.RDATA_PIXELASPECT] = pixel_aspect
+
         rd = rd.GetNext()
     c4d.EventAdd()
