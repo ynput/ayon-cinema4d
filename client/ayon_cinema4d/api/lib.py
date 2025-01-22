@@ -476,9 +476,9 @@ def set_resolution_from_entity(task_entity, doc=None):
         # TODO: Confirm whether we must unlock e.g. aspect ratio lock to allow
         #  changing the render resolution aspect ratio?
         rd.SetParameter(
-            c4d.RDATA_YRES_VIRTUAL, width, c4d.DESCFLAGS_SET_USERINTERACTION)
+            c4d.RDATA_XRES_VIRTUAL, width, c4d.DESCFLAGS_SET_USERINTERACTION)
         rd.SetParameter(
-            c4d.RDATA_XRES_VIRTUAL, height, c4d.DESCFLAGS_SET_USERINTERACTION)
+            c4d.RDATA_YRES_VIRTUAL, height, c4d.DESCFLAGS_SET_USERINTERACTION)
 
         # Set pixel aspect ratio
         rd[c4d.RDATA_PIXELASPECT] = pixel_aspect
