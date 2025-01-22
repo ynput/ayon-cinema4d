@@ -256,7 +256,15 @@ def obj_user_data_to_dict(obj) -> dict:
 
     for description_id, base_container in obj.GetUserDataContainer():
         key = base_container[c4d.DESC_NAME]
-        value = obj[description_id]
+
+        try:
+            value = obj[description_id]
+        except AttributeError:
+            # Fix #23: Silently ignore values that are not wrapped to Python
+            #  because we know user data we are interested in isn't any of
+            #  those anyway. Avoids object unknown in Python error.
+            continue
+
         user_data[key] = value
 
     return user_data
@@ -290,7 +298,13 @@ def read(node) -> dict:
 def get_object_user_data_by_name(obj, user_data_name):
     for description_id, base_container in obj.GetUserDataContainer():
         if base_container[c4d.DESC_NAME] == user_data_name:
-            return obj[description_id]
+            try:
+                return obj[description_id]
+            except AttributeError:
+                # Fix #23: Silently ignore values that are not wrapped to
+                #  Python because we know user data we are interested in isn't
+                #  any of those anyway. Avoids object unknown in Python error.
+                continue
 
 
 def get_siblings(obj, include_self=True):
