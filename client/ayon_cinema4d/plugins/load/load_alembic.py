@@ -93,12 +93,8 @@ class AlembicLoader(plugin.Cinema4DLoader):
             objects.update(children)
 
         for obj in objects:
-            # Only update those with alembic path set
-            # Fix #27: This may return an integer like `2` on some nodes, e.g.
-            # Subdivision Surface, for whatever reason that do not have an
-            # alembic path to set. So we skip if the result is not a string.
-            alembic_path_value = obj[c4d.ALEMBIC_PATH]
-            if alembic_path_value and isinstance(alembic_path_value, str):
+            # Update Alembic Generators
+            if obj.IsInstanceOf(c4d.Oalembicgenerator):
                 obj[c4d.ALEMBIC_PATH] = filepath
                 continue
 
