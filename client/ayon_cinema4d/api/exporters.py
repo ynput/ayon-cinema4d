@@ -179,7 +179,6 @@ def extract_alembic(filepath,
 def extract_fbx(filepath, verbose=False, **kwargs):
     """Extract a single fbx file."""
 
-
     doc = c4d.documents.GetActiveDocument()
     options = get_plugin_imexport_options(FBX_EXPORTER_ID,
                                                      label="FBX")
@@ -259,6 +258,110 @@ def extract_fbx(filepath, verbose=False, **kwargs):
             log.debug("Extracted FBX to: %s", filepath)
     else:
         log.error("Extraction of FBX failed: %s", filepath)
+
+    return filepath
+
+
+def extract_redshiftproxy(
+        filepath,
+        frame_start=None,
+        frame_end=None,
+        frame_step=1,
+        selection=True,
+        export_lights=True,
+        export_compress=True,
+        export_polygon_connectivity=False,
+        doc=None,
+        verbose=False):
+    """Extract a Redshift Proxy."""
+
+    # Redshift may not be available so we import here
+    import redshift  # noqa
+
+    doc = doc or c4d.documents.GetActiveDocument()
+
+    # Fallback to Cinema4d timeline if no start or end frame provided.
+    if frame_start is None:
+        frame_start = doc.GetMinTime().GetFrame(doc.GetFps())
+    if frame_end is None:
+        frame_end = doc.GetMinTime().GetFrame(doc.GetFps())
+
+    # Export at default 1cm scale
+    scale = c4d.UnitScaleData()
+    scale.SetUnitScale(1.0, c4d.DOCUMENT_UNIT_CM)
+
+    # Set export options
+    options = get_plugin_imexport_options(redshift.Frsproxyexport,
+                                          label="Alembic")
+
+    applied_options = {
+        "REDSHIFT_PROXYEXPORT_ANIMATION_FRAME_END": frame_end,
+        "REDSHIFT_PROXYEXPORT_ANIMATION_FRAME_START": frame_start,
+        "REDSHIFT_PROXYEXPORT_ANIMATION_FRAME_STEP": frame_step,
+        "REDSHIFT_PROXYEXPORT_ANIMATION_RANGE": c4d.REDSHIFT_PROXYEXPORT_ANIMATION_RANGE_MANUAL,
+        "REDSHIFT_PROXYEXPORT_EXPORT_COMPRESS": export_compress,
+        "REDSHIFT_PROXYEXPORT_EXPORT_LIGHTS": export_lights,
+        "REDSHIFT_PROXYEXPORT_EXPORT_POLYGON_CONNECTIVITY": export_polygon_connectivity,
+        "REDSHIFT_PROXYEXPORT_OBJECTS": (
+            c4d.REDSHIFT_PROXYEXPORT_OBJECTS_SELECTION if selection
+            else c4d.REDSHIFT_PROXYEXPORT_OBJECTS_ALL
+        ),
+
+        # Proxy Origin:
+        #   - World Origin: REDSHIFT_PROXYEXPORT_ORIGIN_WORLD
+        #   - Object Bounds: REDSHIFT_PROXYEXPORT_ORIGIN_OBJECTS
+        "REDSHIFT_PROXYEXPORT_ORIGIN": c4d.REDSHIFT_PROXYEXPORT_ORIGIN_WORLD,
+
+        # Include default beauty AOV
+        # Keep the default beauty config in the proxy. Used primarily when
+        # exporting entire scenes for rendering with the redshiftCmdLine tool
+        "REDSHIFT_PROXYEXPORT_AOV_DEFAULT_BEAUTY": False,
+
+        "REDSHIFT_PROXYEXPORT_AUTOPROXY_CREATE": False,
+        # "REDSHIFT_PROXYEXPORT_AUTOPROXY_PREFIX": "RS Proxy",
+
+        # Do not remove the exported objects
+        "REDSHIFT_PROXYEXPORT_REMOVE_OBJECTS": False,
+
+        "REDSHIFT_PROXYEXPORT_SCALE": scale,
+
+        # TODO: Set more parameters
+        # "REDSHIFT_PROXYEXPORT_GROUP": ...,
+        # "REDSHIFT_PROXYEXPORT_GROUP_ANIMATION": ...,
+        # "REDSHIFT_PROXYEXPORT_GROUP_AOV": ...,
+        # "REDSHIFT_PROXYEXPORT_GROUP_AUTOPROXY": ...,
+        # "REDSHIFT_PROXYEXPORT_GROUP_OPTIONS": ...,
+    }
+    if verbose:
+        log.debug(
+            "Preparing Redshift Proxy export with options: %s",
+            json.dumps(applied_options, indent=4, default=str),
+        )
+
+    for key, value in applied_options.items():
+        key_id = getattr(c4d, key)
+        # There appears to be a bug where if the value is just set directly
+        # that it fails to apply them for the export, e.g. still exporting the
+        # whole scene even though `c4d.ABCEXPORT_SELECTION_ONLY` is True.
+        # See: https://developers.maxon.net/forum/topic/12767/alembic-export-options-not-working/6  # noqa: E501
+        if isinstance(value, (bool, int)):
+            options[key_id] = not value
+        options[key_id] = value
+
+    # Ensure output directory exists
+    parent_dir = os.path.dirname(filepath)
+    os.makedirs(parent_dir, exist_ok=True)
+
+    if c4d.documents.SaveDocument(
+        doc,
+        filepath,
+        c4d.SAVEDOCUMENTFLAGS_DONTADDTORECENTLIST,
+        redshift.Frsproxyexport,
+    ):
+        if verbose:
+            log.debug("Extracted Redshift Proxy to: %s", filepath)
+    else:
+        log.error("Extraction of Redshift Proxy failed: %s", filepath)
 
     return filepath
 

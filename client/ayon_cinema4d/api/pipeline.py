@@ -5,10 +5,15 @@ import contextlib
 import c4d
 import pyblish.api
 
+from ayon_core.lib import (
+    register_event_callback,
+    is_headless_mode_enabled
+)
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_core.pipeline import (
+    get_current_folder_path,
+    get_current_task_name,
     register_loader_plugin_path,
-    register_inventory_action_path,
     register_creator_plugin_path,
     AYON_CONTAINER_ID,
 )
@@ -52,8 +57,11 @@ class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
-        register_inventory_action_path(INVENTORY_PATH)
+        # TODO: Register only when any inventory actions are created
+        # register_inventory_action_path(INVENTORY_PATH)
         self.log.info(PUBLISH_PATH)
+
+        register_event_callback("taskChanged", on_task_changed)
 
     def open_workfile(self, filepath):
         return open_file(filepath)
@@ -140,7 +148,7 @@ def iter_containers(doc=None):
     """Yield all objects in the active document that have 'id' attribute set
     matching an AYON container ID"""
     doc = doc or c4d.documents.GetActiveDocument()
-    containers = lib.get_objects_by_type("Selection", doc.GetFirstObject(), [])
+    containers = lib.iter_objects(doc.GetFirstObject())
     for container in containers:
         if lib.get_object_user_data_by_name(container, "id") != AYON_CONTAINER_ID:  # noqa
             continue
@@ -184,7 +192,7 @@ def containerise(name,
                  namespace,
                  nodes,
                  context,
-                 loader=None,
+                 loader,
                  suffix="_CON"):
     """Bundle `nodes` into an assembly and imprint it with metadata
 
@@ -196,7 +204,7 @@ def containerise(name,
         namespace (str): Namespace under which to host container
         nodes (list): Long names of nodes to containerise
         context (dict): Asset information
-        loader (str, optional): Name of loader used to produce this container.
+        loader (str): Name of loader used to produce this container.
         suffix (str, optional): Suffix of container, defaults to `_CON`.
 
     Returns:
@@ -209,7 +217,6 @@ def containerise(name,
         prefix=namespace + "_",
         suffix=suffix
     )
-
     with lib.undo_chunk():
         container = c4d.BaseObject(c4d.Oselection)
         container.SetName(container_name)
@@ -220,16 +227,14 @@ def containerise(name,
         doc = lib.active_document()
         doc.InsertObject(container)
 
-        data = {
-            "schema": "ayon:container-3.0",
-            "id": AYON_CONTAINER_ID,
-            "name": name,
-            "namespace": namespace,
-            "loader": str(loader),
-            "representation": str(context["representation"]["id"]),
-        }
+        imprint_container(
+            container,
+            name,
+            namespace,
+            context,
+            loader
+        )
 
-        lib.imprint(container, data, group="AYON")
         # Add the container to the AYON_CONTAINERS layer
         avalon_layer = get_containers_layer(doc=doc)
         container.SetLayerObject(avalon_layer)
@@ -238,3 +243,42 @@ def containerise(name,
         c4d.EventAdd()
 
     return container
+
+
+def imprint_container(
+    container,
+    name,
+    namespace,
+    context,
+    loader
+):
+    """Imprints an object with container metadata and hides it from the user
+    by adding it into a hidden layer.
+    Arguments:
+        container (c4d.BaseObject): The object to imprint.
+        name (str): Name of resulting assembly
+        namespace (str): Namespace under which to host container
+        context (dict): Asset information
+        loader (str): Name of loader used to produce this container.
+    """
+    data = {
+        "schema": "ayon:container-3.0",
+        "id": AYON_CONTAINER_ID,
+        "name": name,
+        "namespace": namespace,
+        "loader": str(loader),
+        "representation": str(context["representation"]["id"]),
+    }
+
+    lib.imprint(container, data, group="AYON")
+
+
+def on_task_changed():
+
+    if not is_headless_mode_enabled():
+        # Get AYON Context menu command plugin (menu item) by its unique id.
+        ayon_context = c4d.plugins.FindPlugin(1064692)
+        # Update its value with the new context.
+        ayon_context.SetName(
+            "{}, {}".format(get_current_folder_path(), get_current_task_name())
+        )
