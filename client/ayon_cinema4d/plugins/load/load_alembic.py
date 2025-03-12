@@ -8,7 +8,7 @@ class AlembicLoader(plugin.Cinema4DLoader):
 
     color = "orange"
     product_types = {"*"}
-    icon = "file-video-o"
+    icon = "code-fork"
     label = "Load Alembic"
     order = -10
     representations = {"abc"}
@@ -93,8 +93,8 @@ class AlembicLoader(plugin.Cinema4DLoader):
             objects.update(children)
 
         for obj in objects:
-            # Only update those with alembic path set
-            if obj[c4d.ALEMBIC_PATH]:
+            # Update Alembic Generators
+            if obj.IsInstanceOf(c4d.Oalembicgenerator):
                 obj[c4d.ALEMBIC_PATH] = filepath
                 continue
 

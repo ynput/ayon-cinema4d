@@ -36,8 +36,12 @@ if "win" in sys.platform:
 
 import c4d  # noqa: E402
 
-from ayon_core.resources import get_resource  # noqa: E402
-from ayon_core.pipeline import install_host  # noqa: E402
+from ayon_core.resources import get_resource, get_ayon_icon_filepath  # noqa: E402
+from ayon_core.pipeline import (
+    install_host,
+    get_current_folder_path,
+    get_current_task_name
+)
 from ayon_cinema4d.api import Cinema4DHost  # noqa: E402
 from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
@@ -60,6 +64,8 @@ AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
 
+AYON_CONTEXT_LABEL_ID = 1064692
+
 
 def get_icon_by_name(name):
     """Get icon full path"""
@@ -69,6 +75,12 @@ def get_icon_by_name(name):
 def get_icon_bitmap_by_name(name):
     bitmap = c4d.bitmaps.BaseBitmap()
     bitmap.InitWith(get_icon_by_name(name))
+    return bitmap
+
+
+def get_ayon_icon_bitmap():
+    bitmap = c4d.bitmaps.BaseBitmap()
+    bitmap.InitWith(get_ayon_icon_filepath())
     return bitmap
 
 
@@ -198,8 +210,14 @@ class ExperimentalTools(c4d.plugins.CommandData):
         return True
 
 
+class ContextLabel(c4d.plugins.CommandData):
+    id = AYON_CONTEXT_LABEL_ID
+    label = "{}, {}".format(get_current_folder_path(), get_current_task_name())
+    icon = get_ayon_icon_bitmap()
+
+
 def install_menu():
-    """Register the OpenPype menu with Cinema4D"""
+    """Register the AYON menu with Cinema4D"""
     main_menu = c4d.gui.GetMenuResource("M_EDITOR")
     plugins_menu = c4d.gui.SearchPluginMenuResource()
 
@@ -209,19 +227,28 @@ def install_menu():
     menu = c4d.BaseContainer()
     menu.InsData(c4d.MENURESOURCE_SUBTITLE, "AYON")
 
+    # Bugfix: Using hardcoded int because Maxon renamed the
+    # `c4d.MENURESOURCE_SEPERATOR` to `c4d.MENURESOURCE_SEPARATOR`
+    # and this saves us the version checks
+    # See: http://developers.maxon.net/forum//post/72528
+    menuresource_separator = 2
+
     # Define menu commands
+
+    add_command(menu, ContextLabel)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
     add_command(menu, Publish)
     add_command(menu, Manage)
     add_command(menu, Library)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, Workfiles)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     add_command(menu, ResetFrameRange)
     add_command(menu, ResetSceneResolution)
     add_command(menu, ResetColorspace)
-    menu.InsData(c4d.MENURESOURCE_SEPERATOR, True)
+    menu.InsData(menuresource_separator, True)
     # add_command(menu, BuildWorkFileCommand)
     add_command(menu, ExperimentalTools)
 
@@ -266,6 +293,7 @@ if __name__ == '__main__':
         ResetColorspace,
         # BuildWorkFileCommand,
         ExperimentalTools,
+        ContextLabel,
     ]:
         c4d.plugins.RegisterCommandPlugin(
             id=command_plugin.id,
