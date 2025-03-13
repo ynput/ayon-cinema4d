@@ -90,6 +90,8 @@ def reset_render_settings():
 
 
 def _set_redshift_colorspace(video_post, colorspace, display, view):
+    # TODO: video_post[REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_CONFIG]?
+    # TODO: video_post[REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_USE_FILE_RULES]?
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_RENDERING_COLORSPACE] = colorspace  # noqa: E501
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_DISPLAY] = display
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_VIEW] = view
