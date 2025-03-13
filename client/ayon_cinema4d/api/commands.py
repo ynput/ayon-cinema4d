@@ -59,6 +59,36 @@ def reset_colorspace():
     c4d.EventAdd()
 
 
+def reset_render_settings():
+    doc = c4d.documents.GetActiveDocument()
+    render_data = doc.GetActiveRenderData()
+
+    # TODO: Add redshift data if not existing
+    #       Set as active renderer
+
+    # Set renderer to Redshift
+    render_data[c4d.RDATA_RENDERENGINE] = REDSHIFT_RENDER_ENGINE_ID
+
+    # Set output filepaths
+    # Render relatively to the scene
+    render_path: str = "./renders/cinema4d/$prj/$take/$pass"
+    render_data[c4d.RDATA_MULTIPASS_FILENAME] = render_path
+
+    # Save only multipass
+    render_data[c4d.RDATA_SAVEIMAGE] = False  # do not save regular image
+    render_data[c4d.RDATA_MULTIPASS_SAVEIMAGE] = True  # save multipass
+    render_data[c4d.RDATA_MULTIPASS_SUFFIX] = True  # pass name suffix
+    render_data[c4d.RDATA_MULTIPASS_ENABLE] = True  # enable multi-layer-file
+    # use the names of the multipass in render settings
+    render_data[c4d.RDATA_MULTIPASS_USERNAMES] = False
+
+    # Set EXR file format
+    render_data[c4d.RDATA_MULTIPASS_SAVEFORMAT] = c4d.FILTER_EXR
+
+    # Trigger update
+    c4d.EventAdd()
+
+
 def _set_redshift_colorspace(video_post, colorspace, display, view):
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_RENDERING_COLORSPACE] = colorspace  # noqa: E501
     video_post[c4d.REDSHIFT_RENDERER_COLOR_MANAGEMENT_OCIO_DISPLAY] = display
