@@ -1,7 +1,4 @@
-from ayon_cinema4d.api import (
-    lib,
-    plugin
-)
+from ayon_cinema4d.api import plugin
 
 
 class CreateRender(plugin.Cinema4DCreator):
@@ -13,6 +10,6 @@ class CreateRender(plugin.Cinema4DCreator):
     product_type = "render"
     icon = "eye"
 
-    def get_instance_attr_defs(self):
-        defs = lib.collect_animation_defs(self.create_context)
-        return defs
+    def get_pre_create_attr_defs(self):
+        # Avoid inherited "Use Selection" attribute
+        return []
