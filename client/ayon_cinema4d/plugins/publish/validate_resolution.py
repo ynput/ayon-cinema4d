@@ -16,7 +16,7 @@ class ValidateResolution(
     """Validate the render resolution setting aligned with DB"""
 
     order = pyblish.api.ValidatorOrder
-    families = ["renderlayer"]
+    families = ["render"]
     label = "Validate Resolution"
     actions = [RepairAction]
     optional = True
