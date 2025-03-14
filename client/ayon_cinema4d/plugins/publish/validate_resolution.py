@@ -38,9 +38,13 @@ class ValidateResolution(
 
     @classmethod
     def get_invalid_resolution(cls, instance):
-        # Current resolution
+        # Current resolution for take
         doc = instance.context.data["doc"]
-        rd = doc.GetActiveRenderData()
+        take_data = doc.GetTakeData()
+        take: c4d.modules.takesystem.BaseTake = (
+            instance.data["transientData"]["take"]
+        )
+        rd, _base_take = take.GetEffectiveRenderData(take_data)
         current_width: int = rd[c4d.RDATA_XRES]
         current_height: int = rd[c4d.RDATA_YRES]
         current_pixel_aspect: float = rd[c4d.RDATA_PIXELASPECT]
