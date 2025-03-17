@@ -1,11 +1,11 @@
 from __future__ import annotations
-from typing import Optional, Any
 import attr
 import pyblish.api
 
 import clique
 
 from ayon_core.pipeline import publish
+from ayon_cinema4d.api import lib_renderproducts
 
 import c4d
 import c4d.documents
@@ -23,155 +23,11 @@ class Cinema4DRenderInstance(publish.RenderInstance):
     frameEndHandle = attr.ib(default=None)
     renderData: c4d.documents.RenderData = attr.ib(default=None)
 
-
-def find_video_post(
-    render_data, plugin_id
-) -> Optional[c4d.documents.BaseVideoPost]:
-    vp = render_data.GetFirstVideoPost()
-    while vp is not None:
-        if vp.IsInstanceOf(plugin_id):
-            return vp
-        vp = vp.GetNext()
-    return None
-
-
-def find_add_video_post(
-    render_data, vp_plugin_id
-) -> c4d.documents.BaseVideoPost:
-    vp = find_video_post(render_data, vp_plugin_id)
-    # If not exists, create it
-    if vp is None:
-        vp = c4d.documents.BaseVideoPost(vp_plugin_id)
-        if vp is not None:
-            render_data.InsertVideoPost(vp)
-    return vp
-
-
-def get_multipasses(
-    render_data: c4d.documents.RenderData,
-) -> list[c4d.BaseList2D]:
-    """Return all multipasses in render data."""
-    multipasses = []
-    multipass = render_data.GetFirstMultipass()
-    while multipass is not None:
-        multipasses.append(multipass)
-        multipass = multipass.GetNext()
-    return multipasses
-
-
-def resolve_filepath(
-    token_path: str,
-    doc: Optional[c4d.documents.BaseDocument] = None,
-    render_data: Optional[c4d.documents.RenderData] = None,
-    render_settings: Optional[c4d.BaseContainer] = None,
-    frame: Optional[int] = None,
-    take: Optional[c4d.modules.takesystem.BaseTake] = None,
-    layer_name: Optional[str] = None,
-    layer_type_name: Optional[str] = None,
-    layer_type: Optional[int] = None,
-) -> str:
-    """Resolve a path with tokens to a resolved path.
-
-    See: https://developers.maxon.net/docs/py/2024_4_0a/modules/c4d.modules/tokensystem/index.html  # noqa
-
-    Constructs the `rpData (RenderPathData)` dictionary:
-        _doc: BaseDocument     -> $prj
-        _rData: RenderData     -> $res, $height, $rs, $renderer
-        _rBc: BaseContainer
-        _take: BaseTake        -> $take
-        _frame: int            -> $frame
-        _layerName: str        -> $userpass
-        _layerTypeName: str    -> $pass
-        _layerType: int
-        _isLight: bool
-        _lightNumber: int
-        _isMaterial: bool
-        _nodeName: str
-        _checkUnresolved: bool
-    """
-    if doc is None:
-        doc = c4d.documents.GetActiveDocument()
-    if render_data is None:
-        render_data = doc.GetActiveRenderData()
-    if render_settings is None:
-        render_settings = render_data.GetData()
-    if frame is None:
-        frame = doc.GetTime().GetFrame(doc.GetFps())
-    if take is None:
-        take = doc.GetTakeData().GetCurrentTake()
-
-    rpd = {
-        "_doc": doc,
-        "_rData": render_data,
-        "_rBc": render_settings,
-        "_frame": frame,
-    }
-    optionals = {
-        "_take": take,
-        "_layerName": layer_name,
-        "_layerTypeName": layer_type_name,
-        "_layerType": layer_type,
-    }
-    for key, value in optionals.items():
-        if value is not None:
-            rpd[key] = value
-
-    return c4d.modules.tokensystem.StringConvertTokens(token_path, rpd)
-
-
-@attr.s
-class AOV:
-    """Dataclass for AOVs
-
-    This should hole all the data to be able to define the resolved path.
-    """
-    item: Any = attr.ib()
-    name: str = attr.ib()
-    enabled: bool = attr.ib()
-    name: str = attr.ib()
-    effective_name: str = attr.ib()
-    aov_type: int = attr.ib()
-    multipass: bool = attr.ib()
-    file_enabled: bool = attr.ib()
-    filepath: str = attr.ib()
-    file_effective_path: str = attr.ib()
-
-    # If not allowed to be multilayer, then this AOV will still be written
-    # as separate file when multi-layer file is enabled. For example, Redshift
-    # Cryptomattes always write to a separate EXR.
-    always_separate_file: bool = attr.ib(default=False)
-
-
-def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost):
-    aovs = redshift.RendererGetAOVs(video_post)
-    for aov in aovs:
-        # TODO: Support light-groups in separate files
-        # Light group settings
-        # REDSHIFT_AOV_LIGHTGROUP_ALL: int = 1025
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV: int = 1024
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_ALL: int = 1
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_NONE: int = 0
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER: int = 2
-        # REDSHIFT_AOV_LIGHTGROUP_NAMES: int = 1026
-
-        # Redshift Cryptomatte is always seperate
-        aov_type: int = aov.GetParameter(c4d.REDSHIFT_AOV_TYPE)
-        always_separate_file = False
-        if aov_type == c4d.REDSHIFT_AOV_TYPE_CRYPTOMATTE:
-             always_separate_file = True
-
-        yield AOV(
-            item=aov,
-            name=aov.GetParameter(c4d.REDSHIFT_AOV_NAME),
-            effective_name=aov.GetParameter(c4d.REDSHIFT_AOV_EFFECTIVE_NAME),
-            aov_type=aov_type,
-            enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_ENABLED)),
-            multipass=bool(aov.GetParameter(c4d.REDSHIFT_AOV_MULTIPASS_ENABLED)),
-            file_enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_FILE_ENABLED)),
-            filepath=aov.GetParameter(c4d.REDSHIFT_AOV_FILE_PATH),
-            file_effective_path=aov.GetParameter(c4d.REDSHIFT_AOV_FILE_EFFECTIVE_PATH),
-            always_separate_file=always_separate_file
-        )
+    # Required for Submit Publish Job
+    renderProducts: lib_renderproducts.ARenderProduct = attr.ib(default=None)
+    colorspaceConfig: dict = attr.ib(default=None)
+    colorspaceDisplay: str = attr.ib(default=None)
+    colorspaceView: str = attr.ib(default=None)
 
 
 class CollectCinema4DRender(
@@ -228,7 +84,7 @@ class CollectCinema4DRender(
                 productName=product_name,
                 folderPath=inst.data["folderPath"],
                 task=inst.data["task"],
-                attachTo=False,
+                attachTo=[],
                 setMembers="",
                 publish=True,
                 name=product_name,
@@ -249,7 +105,17 @@ class CollectCinema4DRender(
                 # The source instance this render instance replaces
                 source_instance=inst,
 
-                renderData=render_data
+                renderProducts=lib_renderproducts.ARenderProduct(
+                    frame_start=frame_start,
+                    frame_end=frame_end
+                ),
+
+                # Required for submit publish job
+                renderData=render_data,
+                colorspaceConfig={},
+                # TODO: Collect correct colorspace config
+                colorspaceDisplay="sRGB",
+                colorspaceView="ACES 1.0 SDR-video",
             )
 
             instance.farm = True
@@ -268,6 +134,11 @@ class CollectCinema4DRender(
         take: c4d.modules.takesystem.BaseTake = (
             instance.data["transientData"]["take"]
         )
+
+        # From the Take and Render Data we find the correct output path,
+        # whether it is multipass and what AOVs are enabled for the renderer.
+        # Each output file is considered to be a "Render Product" similar to
+        # USD terminology.
 
         # Debug log what take we're processing, etc.
         self.log.debug(f"Take: {take.GetName()}")
@@ -294,8 +165,8 @@ class CollectCinema4DRender(
         # token is present in the output path.
         is_multilayer_file = bool(render_data[c4d.RDATA_MULTIPASS_ENABLE])
 
-        # layer_name = "unresolved"  # $userpass if multi-layer file
-        # layer_type_name = "unresolved"  # $pass if multi-layer file
+        layer_name = "unresolved"       # $userpass if multi-layer file
+        layer_type_name = "unresolved"  # $pass if multi-layer file
         # if not is_multilayer_file:
         #     # Include all AOVs or multipasses separately
         #     pass
@@ -306,7 +177,7 @@ class CollectCinema4DRender(
 
 
         # Get all frames
-        files = []
+        files: list[str] = []
         for frame in range(
             render_instance.frameStartHandle,
             render_instance.frameEndHandle + 1,
@@ -321,10 +192,16 @@ class CollectCinema4DRender(
         if renderer == redshift.VPrsrenderer:
             video_post = render_data.GetFirstVideoPost()
             self.log.info("Renderer is redshift.")
-            for aov in iter_redshift_aovs(video_post):
+            for aov in lib_renderproducts.iter_redshift_aovs(video_post):
                 # TODO: Support AOV light groups
                 pass
-        resolved_path = resolve_filepath(token_path, doc, render_data)
+        resolved_path = lib_renderproducts.resolve_filepath(
+            token_path,
+            doc,
+            render_data,
+            layer_name=layer_name,
+            layer_type_name=layer_type_name)
+
         self.log.debug(f"    Raw path: {token_path}")
         self.log.debug(f"    Path: {resolved_path}")
 
@@ -344,4 +221,4 @@ class CollectCinema4DRender(
             )
             self.log.debug(f"    {aov_name} files: {file_labels}")
 
-        return products
+        return [products]
