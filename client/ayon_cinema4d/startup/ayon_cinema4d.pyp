@@ -47,7 +47,8 @@ from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
     reset_frame_range,
     reset_resolution,
-    reset_colorspace
+    reset_colorspace,
+    reset_render_settings
 )  # noqa: E402
 from ayon_core.tools.utils import host_tools  # noqa: E402
 
@@ -58,10 +59,10 @@ AYON_PUBLISH_ID = 1064313
 AYON_MANAGE_ID = 1064315
 AYON_LIBRARY_ID = 1064314
 AYON_WORKFILES_ID = 1064310
-AYON_BUILD_WORKFILE_ID = 1064316
 AYON_RESET_FRAME_RANGE_ID = 1064317
 AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
+AYON_RESET_RENDER_SETTINGS_ID = 1064316
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
 
 AYON_CONTEXT_LABEL_ID = 1064692
@@ -188,14 +189,14 @@ class ResetColorspace(c4d.plugins.CommandData):
         return True
 
 
-# class BuildWorkFileCommand(c4d.plugins.CommandData):
-#     id = AYON_BUILD_WORKFILE_ID
-#     label = "Build Workfile"
-#     icon = c4d.bitmaps.InitResourceBitmap(1024542)  # wrench
-#
-#     def Execute(self, doc):
-#         BuildWorkfile().process()
-#         return True
+class ResetRenderSettings(c4d.plugins.CommandData):
+    id = AYON_RESET_RENDER_SETTINGS_ID
+    label = "Reset Render Settings"
+    icon = c4d.bitmaps.InitResourceBitmap(1024542)  # wrench
+
+    def Execute(self, doc):
+        reset_render_settings()
+        return True
 
 
 class ExperimentalTools(c4d.plugins.CommandData):
@@ -248,8 +249,8 @@ def install_menu():
     add_command(menu, ResetFrameRange)
     add_command(menu, ResetSceneResolution)
     add_command(menu, ResetColorspace)
+    add_command(menu, ResetRenderSettings)
     menu.InsData(menuresource_separator, True)
-    # add_command(menu, BuildWorkFileCommand)
     add_command(menu, ExperimentalTools)
 
     if plugins_menu:
@@ -291,7 +292,7 @@ if __name__ == '__main__':
         ResetFrameRange,
         ResetSceneResolution,
         ResetColorspace,
-        # BuildWorkFileCommand,
+        ResetRenderSettings,
         ExperimentalTools,
         ContextLabel,
     ]:

@@ -8,6 +8,10 @@ class CollectInstances(pyblish.api.InstancePlugin):
     hosts = ["cinema4d"]
 
     def process(self, instance):
+
+        if instance.data.get("productType") == "render":
+            return
+
         self.log.debug(f"Collecting members for {instance}")
 
         # Add the creator attributes to instance.data
