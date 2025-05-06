@@ -28,3 +28,6 @@ class CreateCamera(plugin.Cinema4DCreator):
                 default=True)
         )
         return defs
+
+
+#MGE v0.1.3
