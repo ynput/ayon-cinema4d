@@ -31,3 +31,4 @@ class CreateCamera(plugin.Cinema4DCreator):
 
 
 #MGE v0.1.3
+#MGE v0.1.3 mod 2
