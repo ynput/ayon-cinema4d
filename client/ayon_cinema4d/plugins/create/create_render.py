@@ -1,7 +1,6 @@
 from __future__ import annotations
-from typing import Optional, Any
+import inspect
 import attr
-
 
 from ayon_core.pipeline import publish, CreatorError, CreatedInstance
 from ayon_cinema4d.api import lib, plugin
@@ -25,12 +24,16 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
     layer but only the node which tells the Creator it may now collect
     an instance per renderlayer.
 
+    It collects Cinema4D Takes and individual renderlayers, each turning
+    into a render product instance.
+
     """
     settings_category = "maya"
 
     identifier = "io.ayon.creators.cinema4d.render"
     label = "Render"
-    description = __doc__
+    description = "Create a render product per Cinema4D Take."
+    detailed_description = inspect.cleandoc(__doc__)
     product_type = "render"
     icon = "eye"
 
@@ -72,6 +75,11 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
                 instance = CreatedInstance.from_existing(data, creator=self)
             else:
                 variant: str = take.GetName()
+
+                # Sanitize take variant name (e.g. remove spaces)
+                # because variants and products names are not allowed to have
+                # spaces in them.
+                variant = variant.replace(" ", "_").replace("-", "_")
 
                 # No existing scene instance node for this layer. Note that
                 # this instance will not have the `instance_node` data yet
@@ -190,3 +198,6 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
     def remove_instances(self, instances):
         # TODO: Disallow 'deleting the "Main" take because it can't be removed
         super().remove_instances(instances)
+
+    def get_pre_create_attr_defs(self):
+        return []
