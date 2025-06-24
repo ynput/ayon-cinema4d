@@ -34,21 +34,25 @@ class WorkfileImageIOModel(BaseSettingsModel):
 
     enabled: bool = SettingsField(False, title="Enabled")
     render: str = SettingsField(
+        default="ACES",
         title="Default render space",
         description="It behaves like the 'OCIO_RENDER_SPACE' env var,"
                     " The role of the working space, e.g scene_linear"
     )
     display: str = SettingsField(
+        default="ACES",
         title="Default active displays",
         description="It behaves like the 'OCIO_ACTIVE_DISPLAYS' env var,"
                     " Colon-separated list of displays, e.g ACES:P3"
     )
     view: str = SettingsField(
+        default="sRGB",
         title="Default active views",
         description="It behaves like the 'OCIO_ACTIVE_VIEWS' env var,"
                     " Colon-separated list of views, e.g sRGB:DCDM"
     )
     thumbnails: str = SettingsField(
+        default="sRGB",
         title="Thumbnails",
     )
 
