@@ -29,7 +29,7 @@ class IncrementCurrentFile(pyblish.api.ContextPlugin,
 
         # Filename must not have changed since collecting
         host: IWorkfileHost = registered_host()
-        current_filepath: str = context.data["currentFile"]
+        current_filepath: str = host.get_current_workfile()
         if context.data["currentFile"] != current_filepath:
             raise KnownPublishError(
                 "Collected filename mismatches from current scene name."
