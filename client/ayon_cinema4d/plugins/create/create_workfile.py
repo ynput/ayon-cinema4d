@@ -16,6 +16,7 @@ class CreateWorkfile(AutoCreator):
     label = "Workfile"
     product_type = "workfile"
     icon = "fa5.file"
+    default_variant = "Main"
 
     node_name = "AYON_workfile"
 
