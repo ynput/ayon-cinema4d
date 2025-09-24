@@ -85,7 +85,7 @@ class CreateWorkfile(AutoCreator):
                 project_name=project_name,
                 folder_entity=folder_entity,
                 task_entity=task_entity,
-                varfiant=self.default_variant,
+                variant=self.default_variant,
                 host_name=host_name,
             )
 
