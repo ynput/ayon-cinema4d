@@ -26,7 +26,12 @@ class Cinema4DAddon(AYONAddon, IHostAddon):
         # Register the startup `ayon_cinema4d.pyp`
         startup_path = os.path.join(CINEMA4D_ADDON_ROOT, "startup")
         new_g_module_path = [startup_path]
-        old_g_module_path = env.get("g_additionalModulePath") or ""
+
+        path_key = "g_additionalModulePath"
+        if os.name == "nt":
+            path_key = path_key.upper()
+
+        old_g_module_path = env.get(path_key) or ""
         for path in old_g_module_path.split(os.pathsep):
             if not path:
                 continue
@@ -35,7 +40,7 @@ class Cinema4DAddon(AYONAddon, IHostAddon):
             if norm_path not in new_g_module_path:
                 new_g_module_path.append(norm_path)
 
-        env["g_additionalModulePath"] = os.pathsep.join(new_g_module_path)
+        env[path_key] = os.pathsep.join(new_g_module_path)
 
     def get_workfile_extensions(self):
         return [".c4d"]
