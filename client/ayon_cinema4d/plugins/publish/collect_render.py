@@ -179,6 +179,9 @@ class CollectCinema4DRender(
         save_image: bool = render_data[c4d.RDATA_SAVEIMAGE]
         if save_image:
             # token_path: str = render_data[c4d.RDATA_PATH]
+            # token_path = self._ensure_path_extension(
+            #     token_path, filter_format=render_data[c4d.RDATA_FORMAT]
+            # )
             self.log.warning(
                 "Saving regular image is enabled. "
                 "Currently the Collect Render implementation only supports "
