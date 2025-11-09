@@ -188,6 +188,10 @@ class CollectCinema4DRender(
         # Save Multi-Pass image
         save_multipass_image: bool = render_data[c4d.RDATA_MULTIPASS_SAVEIMAGE]
         multipass_token_path: str = render_data[c4d.RDATA_MULTIPASS_FILENAME]
+        multipass_token_path = self._ensure_path_extension(
+            multipass_token_path,
+            filter_format=render_data[c4d.RDATA_MULTIPASS_SAVEFORMAT]
+        )
         if not save_multipass_image:
             self.log.warning(
                 "Saving Multi-Pass Image is disabled. It is currently the "
@@ -195,6 +199,10 @@ class CollectCinema4DRender(
                 "Please enable it. "
             )
             return []
+
+        self.log.debug(
+            f"Collected Multi-Pass Filepath: {multipass_token_path}"
+        )
 
         # If Multi-Layer File is enabled then the renderer will write into
         # a single file for all AOVs, except in some cases a renderer may write
@@ -285,3 +293,35 @@ class CollectCinema4DRender(
             # TODO: Actually return data
             self.log.info(aov)
             pass
+
+    def _ensure_path_extension(self, path: str, filter_format: int) -> str:
+        """Add file format extension to the filepath.
+
+        C4D always appends the file format extension to the end of the filepath
+        stripping off any existing extension from the filepath field.
+        As such we must mimic this behavior.
+        """
+        path = os.path.splitext(path)[0]
+        extension: str = {
+            c4d.FILTER_AVI: ".avi",
+            c4d.FILTER_B3D: ".b3d",
+            c4d.FILTER_B3DNET: ".b3d",
+            c4d.FILTER_BMP: ".bmp",
+            c4d.FILTER_DDS: ".dds",
+            c4d.FILTER_DPX: ".dpx",
+            c4d.FILTER_EXR: ".exr",
+            c4d.FILTER_HDR: ".hdr",
+            c4d.FILTER_IES: ".ies",
+            c4d.FILTER_IFF: ".iff",
+            c4d.FILTER_JPG: ".jpg",
+            c4d.FILTER_PICT: ".pict",
+            c4d.FILTER_PNG: ".png",
+            c4d.FILTER_PSB: ".psb",
+            c4d.FILTER_PSD: ".psd",
+            c4d.FILTER_RLA: ".rla",
+            c4d.FILTER_RPF: ".rpf",
+            c4d.FILTER_TGA: ".tga",
+            c4d.FILTER_TIF: ".tif",
+            c4d.FILTER_TIF_B3D: ".tif",
+        }[filter_format]
+        return f"{path}{extension}"
