@@ -1,11 +1,12 @@
 name = "cinema4d"
 title = "Cinema4D"
-version = "0.1.4+dev"
+version = "0.1.7+dev"
 
 # Name of client code directory imported in AYON launcher
 # - do not specify if there is no client code
 client_dir = "ayon_cinema4d"
 app_host_name = "cinema4d"
+project_can_override_addon_version = True
 
 # Version compatibility with AYON server
 # ayon_server_version = ">=1.0.7"

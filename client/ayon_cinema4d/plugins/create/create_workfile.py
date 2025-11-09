@@ -1,4 +1,3 @@
-import ayon_api
 from ayon_core.pipeline import CreatedInstance, AutoCreator, AYON_INSTANCE_ID
 from ayon_cinema4d.api.plugin import cache_instance_data
 from ayon_cinema4d.api import lib, plugin
@@ -16,6 +15,7 @@ class CreateWorkfile(AutoCreator):
     label = "Workfile"
     product_type = "workfile"
     icon = "fa5.file"
+    default_variant = "Main"
 
     node_name = "AYON_workfile"
 
@@ -29,9 +29,13 @@ class CreateWorkfile(AutoCreator):
             None,
         )
 
-        project_name = self.project_name
-        folder_path = self.create_context.get_current_folder_path()
-        task_name = self.create_context.get_current_task_name()
+        project_entity = self.create_context.get_current_project_entity()
+        folder_entity = self.create_context.get_current_folder_entity()
+        task_entity = self.create_context.get_current_task_entity()
+
+        project_name = project_entity["name"]
+        folder_path = folder_entity["path"]
+        task_name = task_entity["name"]
         host_name = self.create_context.host_name
 
         existing_folder_path = None
@@ -39,18 +43,12 @@ class CreateWorkfile(AutoCreator):
             existing_folder_path = workfile_instance.get("folderPath")
 
         if not workfile_instance:
-            folder_entity = ayon_api.get_folder_by_path(
-                project_name, folder_path
-            )
-            task_entity = ayon_api.get_task_by_name(
-                project_name, folder_entity["id"], task_name
-            )
             product_name = self.get_product_name(
-                project_name,
-                folder_entity,
-                task_entity,
-                task_name,
-                host_name,
+                project_name=project_name,
+                folder_entity=folder_entity,
+                task_entity=task_entity,
+                variant=self.default_variant,
+                host_name=host_name,
             )
             data = {
                 "folderPath": folder_path,
@@ -83,18 +81,12 @@ class CreateWorkfile(AutoCreator):
             or workfile_instance["task"] != task_name
         ):
             # Update instance context if it's different
-            folder_entity = ayon_api.get_folder_by_path(
-                project_name, folder_path
-            )
-            task_entity = ayon_api.get_task_by_name(
-                project_name, folder_entity["id"], task_name
-            )
             product_name = self.get_product_name(
-                project_name,
-                folder_entity,
-                task_entity,
-                self.default_variant,
-                host_name,
+                project_name=project_name,
+                folder_entity=folder_entity,
+                task_entity=task_entity,
+                variant=self.default_variant,
+                host_name=host_name,
             )
 
             workfile_instance["folderPath"] = folder_path
