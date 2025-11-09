@@ -148,8 +148,7 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost):
         # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_NONE: int = 0
         # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER: int = 2
         # REDSHIFT_AOV_LIGHTGROUP_NAMES: int = 1026
-
-        # Redshift Cryptomatte is always seperate
+        # Redshift Cryptomatte is always separate
         aov_type: int = aov.GetParameter(c4d.REDSHIFT_AOV_TYPE)
         always_separate_file = False
         if aov_type == c4d.REDSHIFT_AOV_TYPE_CRYPTOMATTE:
