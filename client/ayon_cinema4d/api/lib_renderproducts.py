@@ -81,7 +81,7 @@ def resolve_filepath(
     if render_data is None:
         render_data = doc.GetActiveRenderData()
     if render_settings is None:
-        render_settings = render_data.GetData()
+        render_settings = render_data.GetDataInstance()
     if frame is None:
         frame = doc.GetTime().GetFrame(doc.GetFps())
     if take is None:
