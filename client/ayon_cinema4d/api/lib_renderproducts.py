@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any, Optional, Generator
+import os
 
 import attr
 
@@ -47,15 +48,15 @@ def get_multipasses(
 
 
 def resolve_filepath(
-        token_path: str,
-        doc: Optional[c4d.documents.BaseDocument] = None,
-        render_data: Optional[c4d.documents.RenderData] = None,
-        render_settings: Optional[c4d.BaseContainer] = None,
-        frame: Optional[int] = None,
-        take: Optional[c4d.modules.takesystem.BaseTake] = None,
-        layer_name: Optional[str] = None,
-        layer_type_name: Optional[str] = None,
-        layer_type: Optional[int] = None,
+    token_path: str,
+    doc: Optional[c4d.documents.BaseDocument] = None,
+    render_data: Optional[c4d.documents.RenderData] = None,
+    render_settings: Optional[c4d.BaseContainer] = None,
+    frame: Optional[int] = None,
+    take: Optional[c4d.modules.takesystem.BaseTake] = None,
+    layer_name: Optional[str] = None,
+    layer_type_name: Optional[str] = None,
+    layer_type: Optional[int] = None,
 ) -> str:
     """Resolve a path with tokens to a resolved path.
 
@@ -103,7 +104,121 @@ def resolve_filepath(
         if value is not None:
             rpd[key] = value
 
-    return c4d.modules.tokensystem.StringConvertTokens(token_path, rpd)
+    # When passing the token itself as the value for a token, e.g. $pass=$pass
+    # it may hang Cinema4D. So, we swap those out to placeholders to replace
+    # after resolving.
+    placeholders = {}
+    for key, value in rpd.items():
+        if isinstance(value, str) and "$" in value:
+            placeholder = f"____{key.upper()}__PLACEHOLDER____"
+            placeholders[value] = placeholder
+            rpd[key] = placeholder
+
+    resolved = c4d.modules.tokensystem.StringConvertTokens(token_path, rpd)
+    for value, placeholder in placeholders.items():
+        resolved = resolved.replace(placeholder, value)
+    return resolved
+
+
+def apply_name_format(
+    path: str,
+    name_format: int,
+    file_format: int,
+    frame: int = 0
+) -> str:
+    """Apply the C4D render data name format to the given filepath.
+
+    Reference:
+        RDATA_NAMEFORMAT_0 = Name0000.TIF
+        RDATA_NAMEFORMAT_1 = Name0000
+        RDATA_NAMEFORMAT_2 = Name.0000
+        RDATA_NAMEFORMAT_3 = Name000.TIF
+        RDATA_NAMEFORMAT_4 = Name000
+        RDATA_NAMEFORMAT_5 = Name.000
+        RDATA_NAMEFORMAT_6 = Name.0000.TIF
+
+    Args:
+        path:
+        name_format:
+        file_format:
+        frame:
+
+    Returns:
+
+    """
+    head, _ = os.path.splitext(path)
+    padding: int = {
+        c4d.RDATA_NAMEFORMAT_0: 4,
+        c4d.RDATA_NAMEFORMAT_1: 4,
+        c4d.RDATA_NAMEFORMAT_2: 4,
+        c4d.RDATA_NAMEFORMAT_3: 3,
+        c4d.RDATA_NAMEFORMAT_4: 3,
+        c4d.RDATA_NAMEFORMAT_5: 3,
+        c4d.RDATA_NAMEFORMAT_6: 4,
+    }[name_format]
+    frame_str = str(frame).zfill(padding)
+
+    # Prefix frame number with a dot for specific name formats
+    if name_format in {
+        c4d.RDATA_NAMEFORMAT_2,
+        c4d.RDATA_NAMEFORMAT_5,
+        c4d.RDATA_NAMEFORMAT_6,
+    }:
+        frame_str = "." + frame_str
+    # Whenever the frame number directly follows the name and the name ends
+    # with a digit then C4D adds an underscore before the frame number.
+    elif head and head[-1].isdigit():
+        frame_str = "_" + frame_str
+
+    # Add file format extension if name format includes it
+    if name_format in {
+        c4d.RDATA_NAMEFORMAT_0,
+        c4d.RDATA_NAMEFORMAT_3,
+        c4d.RDATA_NAMEFORMAT_6,
+    }:
+        extension: str = get_renderdata_file_format_extension(file_format)
+    else:
+        # No extension
+        extension: str = ""
+
+    return f"{head}{frame_str}{extension}"
+
+
+def get_renderdata_file_format_extension(file_format: int) -> str:
+    """Get the file extension for a given render data file format.
+
+    The file format is e.g. render data like:
+        - c4d.RDATA_FORMAT
+        - c4d.RDATA_MULTIPASS_SAVEFORMAT
+
+    Args:
+        file_format: The C4D render data file format constant.
+
+    Returns:
+        str: A file extension.
+    """
+    return {
+        c4d.FILTER_AVI: ".avi",
+        c4d.FILTER_B3D: ".b3d",
+        c4d.FILTER_B3DNET: ".b3d",
+        c4d.FILTER_BMP: ".bmp",
+        c4d.FILTER_DDS: ".dds",
+        c4d.FILTER_DPX: ".dpx",
+        c4d.FILTER_EXR: ".exr",
+        c4d.FILTER_HDR: ".hdr",
+        c4d.FILTER_IES: ".ies",
+        c4d.FILTER_IFF: ".iff",
+        c4d.FILTER_JPG: ".jpg",
+        c4d.FILTER_PICT: ".pict",
+        c4d.FILTER_PNG: ".png",
+        c4d.FILTER_PSB: ".psb",
+        c4d.FILTER_PSD: ".psd",
+        c4d.FILTER_RLA: ".rla",
+        c4d.FILTER_RPF: ".rpf",
+        c4d.FILTER_TGA: ".tga",
+        c4d.FILTER_TIF: ".tif",
+        c4d.FILTER_TIF_B3D: ".tif",
+    }[file_format]
 
 
 @attr.s
@@ -136,7 +251,7 @@ class AOV:
         return self.name
 
 
-def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost):
+def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV, None, None]:
     """Using a Video Post from Redshift render yield all Redshift AOVs."""
     aovs = redshift.RendererGetAOVs(video_post)
     for aov in aovs:
