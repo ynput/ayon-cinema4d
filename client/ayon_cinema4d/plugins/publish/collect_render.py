@@ -12,6 +12,9 @@ import c4d
 import c4d.documents
 import redshift
 
+import importlib
+importlib.reload(lib_renderproducts)
+
 
 @attr.s
 class Cinema4DRenderInstance(publish.RenderInstance):
@@ -19,7 +22,7 @@ class Cinema4DRenderInstance(publish.RenderInstance):
     fps = attr.ib(default=None)
     projectEntity = attr.ib(default=None)
     stagingDir = attr.ib(default=None)
-    publish_attributes = attr.ib(default={})
+    publish_attributes = attr.ib(factory=dict)
     frameStartHandle = attr.ib(default=None)
     frameEndHandle = attr.ib(default=None)
     renderData: c4d.documents.RenderData = attr.ib(default=None)

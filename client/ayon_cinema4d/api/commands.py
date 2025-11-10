@@ -41,7 +41,7 @@ def reset_colorspace():
     doc[c4d.DOCUMENT_OCIO_CONFIG] = "$OCIO"
 
     # Set preferred OCIO settings from project settings
-    workfile = project_settings["cinema4d"]["workfile"]
+    workfile = project_settings["cinema4d"]["imageio"]["workfile"]
     if workfile["enabled"]:
         doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE] = workfile["render"]
         doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE] = workfile["display"]

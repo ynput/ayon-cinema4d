@@ -1,34 +1,26 @@
 from __future__ import annotations
 import inspect
-import attr
 
-from ayon_core.pipeline import publish, CreatorError, CreatedInstance
+from ayon_core.pipeline import CreatedInstance
 from ayon_cinema4d.api import lib, plugin
 
 import c4d
 import c4d.documents
-import redshift
-
-import importlib
-importlib.reload(lib)
-importlib.reload(plugin)
 
 
 class RenderlayerCreator(plugin.Cinema4DCreator):
     """Creator which creates an instance per renderlayer in the workfile.
 
-    Create and manages renderlayer product per renderLayer in workfile.
+    Create and manages render product instancess per Cinema4D Take in workfile.
     This generates a singleton node in the scene which, if it exists, tells the
-    Creator to collect Maya rendersetup renderlayers as individual instances.
+    Creator to collect Cinema4D Takes as individual instances.
     As such, triggering create doesn't actually create the instance node per
     layer but only the node which tells the Creator it may now collect
-    an instance per renderlayer.
+    an instance per Take.
 
-    It collects Cinema4D Takes and individual renderlayers, each turning
-    into a render product instance.
-
+    It collects Cinema4D Takes each turning into a render product instance.
     """
-    settings_category = "maya"
+    settings_category = "cinema4d"
 
     identifier = "io.ayon.creators.cinema4d.render"
     label = "Render"
@@ -127,7 +119,6 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
         folder_entity = self.create_context.get_current_folder_entity()
         task_entity = self.create_context.get_current_task_entity()
         variant = self._sanitize_take_variant_name(take.GetName())
-        # TODO: Sanitize take variant name (e.g. remove spaces)
 
         host_name = self.create_context.host_name
 
@@ -162,12 +153,12 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
         state.
 
         Make sure to `pop` the data you have already persisted if that data
-        is also read from native Maya node attribute in the scene in
+        is also read from native Cinema4D node attribute in the scene in
         `read_instance_node_overrides`. This avoids it still getting written
         into the `UserData` of the instance node as well.
 
         Arguments:
-            data (str): The data available to be 'persisted'.
+            data (dict): The data available to be 'persisted'.
             instance (CreatedInstance): The instance operating on.
 
         Returns:

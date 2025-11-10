@@ -8,7 +8,7 @@ import c4d.documents
 import redshift
 
 REDSHIFT_RENDER_ENGINE_ID = 1036219
-ARNOLD_RENDER_ENGINE_ID = 1029988
+# ARNOLD_RENDER_ENGINE_ID = 1029988
 
 # See: https://developers.maxon.net/docs/py/2024_2_0/modules/c4d.documents/RenderData/index.html
 def find_video_post(
@@ -147,15 +147,18 @@ def apply_name_format(
 
     """
     head, _ = os.path.splitext(path)
-    padding: int = {
-        c4d.RDATA_NAMEFORMAT_0: 4,
-        c4d.RDATA_NAMEFORMAT_1: 4,
-        c4d.RDATA_NAMEFORMAT_2: 4,
-        c4d.RDATA_NAMEFORMAT_3: 3,
-        c4d.RDATA_NAMEFORMAT_4: 3,
-        c4d.RDATA_NAMEFORMAT_5: 3,
-        c4d.RDATA_NAMEFORMAT_6: 4,
-    }[name_format]
+    try:
+        padding: int = {
+            c4d.RDATA_NAMEFORMAT_0: 4,
+            c4d.RDATA_NAMEFORMAT_1: 4,
+            c4d.RDATA_NAMEFORMAT_2: 4,
+            c4d.RDATA_NAMEFORMAT_3: 3,
+            c4d.RDATA_NAMEFORMAT_4: 3,
+            c4d.RDATA_NAMEFORMAT_5: 3,
+            c4d.RDATA_NAMEFORMAT_6: 4,
+        }[name_format]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported name format: {name_format}") from exc
     frame_str = str(frame).zfill(padding)
 
     # Prefix frame number with a dot for specific name formats
@@ -197,28 +200,31 @@ def get_renderdata_file_format_extension(file_format: int) -> str:
     Returns:
         str: A file extension.
     """
-    return {
-        c4d.FILTER_AVI: ".avi",
-        c4d.FILTER_B3D: ".b3d",
-        c4d.FILTER_B3DNET: ".b3d",
-        c4d.FILTER_BMP: ".bmp",
-        c4d.FILTER_DDS: ".dds",
-        c4d.FILTER_DPX: ".dpx",
-        c4d.FILTER_EXR: ".exr",
-        c4d.FILTER_HDR: ".hdr",
-        c4d.FILTER_IES: ".ies",
-        c4d.FILTER_IFF: ".iff",
-        c4d.FILTER_JPG: ".jpg",
-        c4d.FILTER_PICT: ".pict",
-        c4d.FILTER_PNG: ".png",
-        c4d.FILTER_PSB: ".psb",
-        c4d.FILTER_PSD: ".psd",
-        c4d.FILTER_RLA: ".rla",
-        c4d.FILTER_RPF: ".rpf",
-        c4d.FILTER_TGA: ".tga",
-        c4d.FILTER_TIF: ".tif",
-        c4d.FILTER_TIF_B3D: ".tif",
-    }[file_format]
+    try:
+        return {
+            c4d.FILTER_AVI: ".avi",
+            c4d.FILTER_B3D: ".b3d",
+            c4d.FILTER_B3DNET: ".b3d",
+            c4d.FILTER_BMP: ".bmp",
+            c4d.FILTER_DDS: ".dds",
+            c4d.FILTER_DPX: ".dpx",
+            c4d.FILTER_EXR: ".exr",
+            c4d.FILTER_HDR: ".hdr",
+            c4d.FILTER_IES: ".ies",
+            c4d.FILTER_IFF: ".iff",
+            c4d.FILTER_JPG: ".jpg",
+            c4d.FILTER_PICT: ".pict",
+            c4d.FILTER_PNG: ".png",
+            c4d.FILTER_PSB: ".psb",
+            c4d.FILTER_PSD: ".psd",
+            c4d.FILTER_RLA: ".rla",
+            c4d.FILTER_RPF: ".rpf",
+            c4d.FILTER_TGA: ".tga",
+            c4d.FILTER_TIF: ".tif",
+            c4d.FILTER_TIF_B3D: ".tif",
+        }[file_format]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported file format: {file_format}") from exc
 
 
 @attr.s
@@ -324,7 +330,7 @@ class ARenderProduct(object):
         """To be implemented by renderer class.
         This should return a list of RenderProducts.
         Returns:
-            list: List of RenderProduct
+            list[RenderProduct]: List of RenderProduct instances.
         """
         return [
             RenderProduct(
