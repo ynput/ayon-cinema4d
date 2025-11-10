@@ -62,7 +62,7 @@ class ValidateFrameRange(
             if context_value != instance_value:
                 self.log.warning(
                     "{} on instance ({}) does not match with the folder "
-                    "({}).".format(label, context_value, instance_value)
+                    "({}).".format(label, instance_value, context_value)
                 )
                 invalid = True
 

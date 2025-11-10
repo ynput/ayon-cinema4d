@@ -28,10 +28,7 @@ class WorkfileImageIOModel(BaseSettingsModel):
 
     Empty values will be skipped, allowing any existing env vars to
     pass through as defined.
-
-    Note: The render space in Houdini is
-    always set to the 'scene_linear' role."""
-
+    """
     enabled: bool = SettingsField(False, title="Enabled")
     render: str = SettingsField(
         default="ACES",

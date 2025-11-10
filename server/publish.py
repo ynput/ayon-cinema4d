@@ -22,7 +22,7 @@ class BasicEnabledStatesModel(BaseSettingsModel):
 
 
 class PublishPluginsModel(BaseSettingsModel):
-    # Shapes
+    # Frame range and resolution validators
     ValidateFrameRange: BasicEnabledStatesModel = SettingsField(
         default_factory=BasicEnabledStatesModel,
         title="Validate Frame Range",

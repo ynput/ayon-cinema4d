@@ -238,10 +238,14 @@ class CollectCinema4DRender(
         # Set output dir from the beauty output because it is required for
         # publish metadata to be written out and the publish job submission
         # to succeed
-        render_instance.outputDir = os.path.dirname(next(iter(products.values()))[0])
-        self.log.debug(
-            f"Collected output directory: {render_instance.outputDir}"
-        )
+        if products:
+            render_instance.outputDir = os.path.dirname(next(iter(products.values()))[0])
+            self.log.debug(
+                f"Collected output directory: {render_instance.outputDir}"
+            )
+        else:
+            render_instance.outputDir = None
+            self.log.warning("No render outputs collected; outputDir set to None.")
 
         # Debug log all collected sequences
         for aov_name, aov_files in products.items():
@@ -336,7 +340,7 @@ class CollectCinema4DRender(
                 # Format the filepath based on the render data's token
                 # path
                 # For whatever reason the Depth AOV comes out of "$userpass"
-                # instead of the effectiv name "Z".
+                # instead of the effective name "Z".
                 layer_name: str = aov.name or aov.effective_name
                 if not aov.name and aov.effective_name == "Z":
                     layer_name = "$userpass"
