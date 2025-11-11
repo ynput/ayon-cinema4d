@@ -9,8 +9,11 @@ from .lib import (
     set_resolution_from_entity,
     set_frame_range_from_entity
 )
-from .lib_renderproducts import find_video_post, REDSHIFT_RENDER_ENGINE_ID
-
+from .lib_renderproducts import (
+    find_video_post,
+    REDSHIFT_RENDER_ENGINE_ID,
+    set_scene_ocio_config
+)
 import c4d
 
 log = logging.getLogger(__name__)
@@ -43,11 +46,14 @@ def reset_colorspace():
     # Set preferred OCIO settings from project settings
     workfile = project_settings["cinema4d"]["imageio"]["workfile"]
     if workfile["enabled"]:
-        doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE] = workfile["render"]
-        doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE] = workfile["display"]
-        doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM] = workfile["view"]
-        doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM_THUMBNAILS] = (
-            workfile["thumbnails"]
+
+        set_scene_ocio_config(
+            doc,
+            config="$OCIO",
+            display=workfile["display"],
+            view=workfile["view"],
+            colorspace=workfile["render"],
+            thumbnails=workfile["thumbnails"],
         )
 
         render_data = doc.GetActiveRenderData()

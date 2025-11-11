@@ -330,6 +330,44 @@ def get_default_ocio_resource() -> str:
     return os.path.join(resources, "ocio", "config.ocio")
 
 
+def set_scene_ocio_config(
+    doc: c4d.documents.BaseDocument,
+    config: Optional[str] = None,
+    display: Optional[str] = None,
+    view: Optional[str] = None,
+    colorspace: Optional[str] = None,
+    thumbnails: Optional[str] = None,
+) -> None:
+    # Set scene OCIO config, display and view
+    if config is not None:
+        doc[c4d.DOCUMENT_COLOR_MANAGEMENT] = c4d.DOCUMENT_COLOR_MANAGEMENT_OCIO
+        doc[c4d.DOCUMENT_OCIO_CONFIG] = config
+
+    if display is not None:
+        ocio_displays = doc.GetOcioDisplayColorSpaceNames()
+        if display in ocio_displays:
+            display_index = ocio_displays.index(display)
+            doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE] = display_index
+
+    if view is not None:
+        ocio_views = doc.GetOcioViewTransformNames()
+        if view in ocio_views:
+            view_index = ocio_views.index(view)
+            doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM] = view_index
+
+    if thumbnails:
+        ocio_views = doc.GetOcioViewTransformNames()
+        if thumbnails in ocio_views:
+            view_index = ocio_views.index(thumbnails)
+            doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM_THUMBNAILS] = view_index
+
+    if colorspace is not None:
+        ocio_colorspaces = doc.GetOcioRenderingColorSpaceNames()
+        if colorspace in ocio_colorspaces:
+            colorspace_index = ocio_colorspaces.index(colorspace)
+            doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE] = colorspace_index
+
+
 def get_scene_ocio_config(doc: c4d.documents.BaseDocument) -> dict[str, str]:
     # Get scene OCIO config, display and view
     config: str = doc.GetOcioConfigPath()
