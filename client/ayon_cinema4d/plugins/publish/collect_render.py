@@ -12,19 +12,15 @@ import c4d
 import c4d.documents
 import redshift
 
-import importlib
-importlib.reload(lib_renderproducts)
-
 
 @attr.s
 class Cinema4DRenderInstance(publish.RenderInstance):
-    # extend generic, composition name is needed
-    fps = attr.ib(default=None)
-    projectEntity = attr.ib(default=None)
-    stagingDir = attr.ib(default=None)
-    publish_attributes = attr.ib(factory=dict)
-    frameStartHandle = attr.ib(default=None)
-    frameEndHandle = attr.ib(default=None)
+    fps: float = attr.ib(default=None)
+    projectEntity: dict = attr.ib(factory=dict)
+    stagingDir: str = attr.ib(default=None)
+    publish_attributes: dict = attr.ib(factory=dict)
+    frameStartHandle: int = attr.ib(default=None)
+    frameEndHandle: int = attr.ib(default=None)
     renderData: c4d.documents.RenderData = attr.ib(default=None)
 
     # Required for Submit Publish Job
@@ -142,10 +138,6 @@ class CollectCinema4DRender(
         # TODO: Relative paths may need to be made absolute because otherwise
         #  those paths will become relative to the PUBLISHED scenefile instead
         #  of the WORKFILE?
-        # TODO: Separate into clearer isolated methods
-        #  self._collect_regular_image()
-        #  self._collect_multipass_image()
-        #  self._collect_video_posts(video_posts)
 
         instance: pyblish.api.Instance = render_instance.source_instance
         render_data: c4d.documents.RenderData = render_instance.renderData
@@ -239,7 +231,8 @@ class CollectCinema4DRender(
         # publish metadata to be written out and the publish job submission
         # to succeed
         if products:
-            render_instance.outputDir = os.path.dirname(next(iter(products.values()))[0])
+            first_product_file: str = next(iter(products.values()))[0]
+            render_instance.outputDir = os.path.dirname(first_product_file)
             self.log.debug(
                 f"Collected output directory: {render_instance.outputDir}"
             )
@@ -281,6 +274,8 @@ class CollectCinema4DRender(
         multilayer_file: bool = render_data[c4d.RDATA_MULTIPASS_SAVEONEFILE]
 
         if multipass_enabled and multilayer_file:
+            # TODO: Check if Cryptomatte is still forced to be written out
+            #   in this scenario as a separate file.
             # Single file
             return {"": files_resolver(multipass_token_path)}
 
@@ -303,7 +298,7 @@ class CollectCinema4DRender(
         files_resolver_fn,
         multipass_token_path: str
     ) -> dict[str, list[str]]:
-        """Collect all Redshift AOVs"""
+        """Collect all Redshift AOVs output filepaths by AOV name."""
         products: dict[str, list[str]] = {}
 
         # Get Redshift Video Post
@@ -314,8 +309,8 @@ class CollectCinema4DRender(
             return products
 
         # If Global AOV mode is set to disabled, collect no AOV data
-        AOV_DISABLED = c4d.REDSHIFT_RENDERER_AOV_GLOBAL_MODE_DISABLE
-        if redshift_vp[c4d.REDSHIFT_RENDERER_AOV_GLOBAL_MODE] == AOV_DISABLED:
+        aov_disabled: int = c4d.REDSHIFT_RENDERER_AOV_GLOBAL_MODE_DISABLE
+        if redshift_vp[c4d.REDSHIFT_RENDERER_AOV_GLOBAL_MODE] == aov_disabled:
             self.log.debug("Redshift Global AOV mode is disabled.")
             return products
 
@@ -337,14 +332,14 @@ class CollectCinema4DRender(
                 filepath = filepath.rstrip("0")
                 files = files_resolver_fn(filepath)
             else:
-                # Format the filepath based on the render data's token
-                # path
                 # For whatever reason the Depth AOV comes out of "$userpass"
                 # instead of the effective name "Z".
                 layer_name: str = aov.name or aov.effective_name
                 if not aov.name and aov.effective_name == "Z":
                     layer_name = "$userpass"
 
+                # Format the filepath based on the render data's token
+                # path
                 files = files_resolver_fn(
                     multipass_token_path,
                     layer_name=layer_name,
