@@ -344,11 +344,11 @@ class CollectCinema4DRender(
             if not is_separate_file:
                 continue
 
-            # Get filepath without extension and the zero frame suffix that
-            # Redshift resolves as the frame number
+            # Get filepath without extension and the frame suffix that
+            # Redshift already includes in the effective path
             if aov.file_effective_path:
                 filepath = os.path.splitext(aov.file_effective_path)[0]
-                filepath = filepath.rstrip("0")
+                filepath = filepath.rstrip("0123456789")
                 files = files_resolver_fn(filepath)
             else:
                 # For whatever reason the Depth AOV comes out of "$userpass"
