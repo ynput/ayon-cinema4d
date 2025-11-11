@@ -25,7 +25,7 @@ class Cinema4DRenderInstance(publish.RenderInstance):
 
     # Required for Submit Publish Job
     renderProducts: lib_renderproducts.ARenderProduct = attr.ib(default=None)
-    colorspaceConfig: dict = attr.ib(default=None)
+    colorspaceConfig: dict = attr.ib(factory=dict)
     colorspaceDisplay: str = attr.ib(default=None)
     colorspaceView: str = attr.ib(default=None)
 
@@ -119,7 +119,6 @@ class CollectCinema4DRender(
 
                 # Required for submit publish job
                 renderData=render_data,
-                colorspaceConfig={},
                 # TODO: Collect correct colorspace config
                 colorspaceDisplay="sRGB",
                 colorspaceView="ACES 1.0 SDR-video",
