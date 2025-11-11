@@ -22,6 +22,7 @@ class Cinema4DRenderInstance(publish.RenderInstance):
     frameStartHandle: int = attr.ib(default=None)
     frameEndHandle: int = attr.ib(default=None)
     renderData: c4d.documents.RenderData = attr.ib(default=None)
+    sceneRenderColorspace: str = attr.ib(default=None)
 
     # Required for Submit Publish Job
     renderProducts: lib_renderproducts.ARenderProduct = attr.ib(default=None)
@@ -55,6 +56,9 @@ class CollectCinema4DRender(
         self.log.debug(f"Scene OCIO Config: '{scene_ocio_config['config']}'")
         self.log.debug(f"Scene OCIO Display: '{scene_ocio_config['display']}'")
         self.log.debug(f"Scene OCIO View: '{scene_ocio_config['view']}'")
+        self.log.debug(
+            f"Scene OCIO Colorspace: '{scene_ocio_config['colorspace']}'"
+        )
 
         instances: list[Cinema4DRenderInstance] = []
         for inst in context:
@@ -128,6 +132,7 @@ class CollectCinema4DRender(
                 colorspaceConfig=scene_ocio_config["config"],
                 colorspaceDisplay=scene_ocio_config["display"],
                 colorspaceView=scene_ocio_config["view"],
+                sceneRenderColorspace=scene_ocio_config["colorspace"],
             )
 
             instance.farm = True
@@ -256,6 +261,18 @@ class CollectCinema4DRender(
                 str(collection) for collection in collections
             )
             self.log.debug(f"  {aov_name} files: {', '.join(file_labels)}")
+
+        # Assume that for all render products we have the same colorspace
+        # so for now we will apply the scene render colorspace to all products
+        # This is used by the Submit Publish Job plug-in to set the colorspace
+        # for each instance
+        for aov_name, files in products.items():
+            render_instance.renderProducts.layer_data.products.append(
+                lib_renderproducts.RenderProduct(
+                    productName=aov_name,
+                    colorspace=render_instance.sceneRenderColorspace,
+                )
+            )
 
         return [products]
 

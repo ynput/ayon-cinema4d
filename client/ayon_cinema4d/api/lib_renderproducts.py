@@ -296,6 +296,7 @@ class LayerMetadata(object):
     """Data class for Render Layer metadata."""
     frameStart = attr.ib()
     frameEnd = attr.ib()
+    products: list[RenderProduct] = attr.ib(factory=list)
 
 
 @attr.s
@@ -304,17 +305,13 @@ class RenderProduct(object):
     Getting Colorspace as Specific Render Product Parameter for submitting
     publish job.
     """
-    colorspace = attr.ib()  # colorspace
-    view = attr.ib()        # OCIO view transform
-    productName = attr.ib(default=None)
+    productName: str = attr.ib()   # AOV name or "" for Beauty
+    colorspace: str = attr.ib()  # Render Colorspace
 
 
 class ARenderProduct(object):
     def __init__(self, frame_start, frame_end):
-        """Constructor."""
-        # Initialize
         self.layer_data = self._get_layer_data(frame_start, frame_end)
-        self.layer_data.products = self.get_render_products()
 
     def _get_layer_data(
         self,
@@ -326,20 +323,6 @@ class ARenderProduct(object):
             frameEnd=int(frame_end),
         )
 
-    def get_render_products(self):
-        """To be implemented by renderer class.
-        This should return a list of RenderProducts.
-        Returns:
-            list[RenderProduct]: List of RenderProduct instances.
-        """
-        return [
-            RenderProduct(
-                colorspace="sRGB",
-                view="ACES 1.0",
-                productName=""
-            )
-        ]
-
 
 def get_default_ocio_resource() -> str:
     """Return default OCIO config path for Cinema4D."""
@@ -349,10 +332,7 @@ def get_default_ocio_resource() -> str:
 
 def get_scene_ocio_config(doc: c4d.documents.BaseDocument) -> dict[str, str]:
     # Get scene OCIO config, display and view
-    config: str = os.path.expandvars(doc[c4d.DOCUMENT_OCIO_CONFIG])
-    # Expand C4D default value: $(DEFAULT)
-    if config == "$(DEFAULT)":
-        config = get_default_ocio_resource()
+    config: str = doc.GetOcioConfigPath()
 
     display: str = ""
     ocio_displays = doc.GetOcioDisplayColorSpaceNames()
@@ -372,8 +352,14 @@ def get_scene_ocio_config(doc: c4d.documents.BaseDocument) -> dict[str, str]:
 
         view = ocio_views[view_index]
 
+    ocio_colorspaces: list[str] = doc.GetOcioRenderingColorSpaceNames()
+    colorspace: str = ocio_colorspaces[
+        doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE]
+    ]
+
     return {
         "config": config,
         "display": display,
         "view": view,
+        "colorspace": colorspace
     }
