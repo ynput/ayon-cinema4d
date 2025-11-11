@@ -368,7 +368,20 @@ def set_scene_ocio_config(
             doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE] = colorspace_index
 
 
-def get_scene_ocio_config(doc: c4d.documents.BaseDocument) -> dict[str, str]:
+def get_scene_ocio_config(
+    doc: c4d.documents.BaseDocument
+) -> dict[str, Optional[str]]:
+
+    # If OCIO management is not enabled then C4D renders using legacy (sRGB
+    # linear workflow) for which we can't return a valid OCIO output.
+    if doc[c4d.DOCUMENT_COLOR_MANAGEMENT] != c4d.DOCUMENT_COLOR_MANAGEMENT_OCIO:
+        return {
+            "config": None,
+            "display": None,
+            "view": None,
+            "colorspace": None
+        }
+
     # Get scene OCIO config, display and view
     config: str = doc.GetOcioConfigPath()
 
