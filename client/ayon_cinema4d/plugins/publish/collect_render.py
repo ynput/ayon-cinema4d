@@ -149,9 +149,6 @@ class CollectCinema4DRender(
         take: c4d.modules.takesystem.BaseTake = (
             instance.data["transientData"]["take"]
         )
-        video_posts: list[c4d.documents.BaseVideoPost] = lib.get_siblings(
-            render_data.GetFirstVideoPost()
-        )
 
         # Debug log what take we're processing, etc.
         self.log.debug(f"Take: {take.GetName()}")
@@ -167,6 +164,14 @@ class CollectCinema4DRender(
             f"{render_instance.resolutionWidth}x"
             f"{render_instance.resolutionHeight}"
         )
+
+        # Debug log video posts
+        video_posts: list[c4d.documents.BaseVideoPost] = lib.get_siblings(
+            render_data.GetFirstVideoPost()
+        )
+        video_posts_names = ", ".join(vp.GetName() for vp in video_posts)
+        self.log.debug(f"  Video posts: {video_posts_names}")
+
         name_format: int = render_data[c4d.RDATA_NAMEFORMAT]
 
         def files_resolver(
@@ -201,9 +206,6 @@ class CollectCinema4DRender(
             return files
 
         # Get take render data AOVs
-        video_posts_names = ", ".join(vp.GetName() for vp in video_posts)
-        self.log.debug(f"  Video posts: {video_posts_names}")
-
         products: dict[str, list[str]] = {}
 
         # Regular image
@@ -221,7 +223,6 @@ class CollectCinema4DRender(
             products.update(
                 self._collect_multipass(
                     render_data,
-                    video_posts,
                     files_resolver
                 )
             )
@@ -255,7 +256,6 @@ class CollectCinema4DRender(
     def _collect_multipass(
         self,
         render_data,
-        video_posts,
         files_resolver
     ) -> dict[str, list[str]]:
 
@@ -278,34 +278,31 @@ class CollectCinema4DRender(
             # Single file
             return {"": files_resolver(multipass_token_path)}
 
-        # File per AOV
+        # Support Redshift AOVs
         renderer: int = render_data[c4d.RDATA_RENDERENGINE]
         if renderer == redshift.VPrsrenderer:
-            # Support Redshift AOVs
             self.log.debug("Renderer is Redshift.")
-            return self._collect_redshift_aovs(
-                video_posts,
-                files_resolver_fn=files_resolver,
-                multipass_token_path=multipass_token_path
+            redshift_vp = lib_renderproducts.find_video_post(
+                render_data,
+                lib_renderproducts.REDSHIFT_RENDER_ENGINE_ID
             )
+            if redshift_vp:
+                return self._collect_redshift_aovs(
+                    redshift_vp,
+                    files_resolver_fn=files_resolver,
+                    multipass_token_path=multipass_token_path
+                )
 
         return {}
 
     def _collect_redshift_aovs(
         self,
-        video_posts,
+        redshift_vp: c4d.documents.BaseVideoPost,
         files_resolver_fn,
         multipass_token_path: str
     ) -> dict[str, list[str]]:
         """Collect all Redshift AOVs output filepaths by AOV name."""
         products: dict[str, list[str]] = {}
-
-        # Get Redshift Video Post
-        redshift_vp = next((
-            vp for vp in video_posts if vp.GetTypeName() == "Redshift"
-        ), None)
-        if not redshift_vp:
-            return products
 
         # If Global AOV mode is set to disabled, collect no AOV data
         aov_disabled: int = c4d.REDSHIFT_RENDERER_AOV_GLOBAL_MODE_DISABLE
