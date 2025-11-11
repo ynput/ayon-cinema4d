@@ -25,7 +25,7 @@ class Cinema4DRenderInstance(publish.RenderInstance):
 
     # Required for Submit Publish Job
     renderProducts: lib_renderproducts.ARenderProduct = attr.ib(default=None)
-    colorspaceConfig: dict = attr.ib(factory=dict)
+    colorspaceConfig: str = attr.ib(default=None)
     colorspaceDisplay: str = attr.ib(default=None)
     colorspaceView: str = attr.ib(default=None)
 
@@ -50,6 +50,12 @@ class CollectCinema4DRender(
         project_entity = context.data["projectEntity"]
         doc: c4d.documents.BaseDocument = context.data["doc"]
         take_data = doc.GetTakeData()
+
+        scene_ocio_config = lib_renderproducts.get_scene_ocio_config(doc)
+        self.log.debug(f"Scene OCIO Config: '{scene_ocio_config['config']}'")
+        self.log.debug(f"Scene OCIO Display: '{scene_ocio_config['display']}'")
+        self.log.debug(f"Scene OCIO View: '{scene_ocio_config['view']}'")
+
         instances: list[Cinema4DRenderInstance] = []
         for inst in context:
             if not inst.data.get("active", True):
@@ -119,9 +125,9 @@ class CollectCinema4DRender(
 
                 # Required for submit publish job
                 renderData=render_data,
-                # TODO: Collect correct colorspace config
-                colorspaceDisplay="sRGB",
-                colorspaceView="ACES 1.0 SDR-video",
+                colorspaceConfig=scene_ocio_config["config"],
+                colorspaceDisplay=scene_ocio_config["display"],
+                colorspaceView=scene_ocio_config["view"],
             )
 
             instance.farm = True

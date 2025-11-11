@@ -339,3 +339,41 @@ class ARenderProduct(object):
                 productName=""
             )
         ]
+
+
+def get_default_ocio_resource() -> str:
+    """Return default OCIO config path for Cinema4D."""
+    resources = c4d.storage.GeGetC4DPath(c4d.C4D_PATH_RESOURCE)
+    return os.path.join(resources, "ocio", "config.ocio")
+
+
+def get_scene_ocio_config(doc: c4d.documents.BaseDocument) -> dict[str, str]:
+    # Get scene OCIO config, display and view
+    config: str = os.path.expandvars(doc[c4d.DOCUMENT_OCIO_CONFIG])
+    # Expand C4D default value: $(DEFAULT)
+    if config == "$(DEFAULT)":
+        config = get_default_ocio_resource()
+
+    display: str = ""
+    ocio_displays = doc.GetOcioDisplayColorSpaceNames()
+    if ocio_displays:
+        display = ocio_displays[doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE]]
+
+    view: str = ""
+    ocio_views = doc.GetOcioViewTransformNames()
+    if ocio_views:
+        # In some cases if the attribute was not explicitly set then C4D may
+        # raise `AttributeError: parameter access failed`. If that happens,
+        # we assume it's just the first index.
+        try:
+            view_index: int = doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM]
+        except AttributeError:
+            view_index = 0
+
+        view = ocio_views[view_index]
+
+    return {
+        "config": config,
+        "display": display,
+        "view": view,
+    }
