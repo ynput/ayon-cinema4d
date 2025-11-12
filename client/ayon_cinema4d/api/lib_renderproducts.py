@@ -250,11 +250,6 @@ class AOV:
     filepath: str = attr.ib()              # Direct Output path
     file_effective_path: str = attr.ib()   # Effective path for direct output
 
-    # If not allowed to be multilayer, then this AOV will still be written
-    # as separate file when multi-layer file is enabled. For example, Redshift
-    # Cryptomattes always write to a separate EXR.
-    always_separate_file: bool = attr.ib(default=False)
-
     @property
     def layer_name(self) -> str:
         return self.effective_name
@@ -287,24 +282,18 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV
 
     for aov in aovs:
         # Redshift Cryptomatte is always separate
-        aov_type: int = aov.GetParameter(c4d.REDSHIFT_AOV_TYPE)
-        always_separate_file = False
-        if aov_type == c4d.REDSHIFT_AOV_TYPE_CRYPTOMATTE:
-            always_separate_file = True
-
         global_aov = AOV(
             item=aov,
             name=aov.GetParameter(c4d.REDSHIFT_AOV_NAME),
             effective_name=aov.GetParameter(c4d.REDSHIFT_AOV_EFFECTIVE_NAME),
-            aov_type=aov_type,
+            aov_type=aov.GetParameter(c4d.REDSHIFT_AOV_TYPE),
             enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_ENABLED)),
             multipass_enabled=bool(
                 aov.GetParameter(c4d.REDSHIFT_AOV_MULTIPASS_ENABLED)),
             direct_enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_FILE_ENABLED)),
             filepath=aov.GetParameter(c4d.REDSHIFT_AOV_FILE_PATH),
             file_effective_path=aov.GetParameter(
-                c4d.REDSHIFT_AOV_FILE_EFFECTIVE_PATH),
-            always_separate_file=always_separate_file
+                c4d.REDSHIFT_AOV_FILE_EFFECTIVE_PATH)
         )
 
         if global_aov.effective_name == "Z":
