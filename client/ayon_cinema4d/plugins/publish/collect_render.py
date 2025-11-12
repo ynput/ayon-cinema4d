@@ -40,6 +40,12 @@ class CollectCinema4DRender(
     Each active render instance represents a `Take` inside Cinema4D. For this
     take we will get its render settings and will compute the applicable
     frame range and expected output files as well.
+
+    Each take in Cinema4D can have its own "Render Settings" overrides.
+    As such each take may have its own "Render Data" and "Video Post"
+    as a result it can have different frame ranges, renderer, etc.
+    and also different output filepath settings.
+    See: https://developers.maxon.net/docs/Cinema4DCPPSDK/page_overview_takesystem.html  # noqa
     """
     order = pyblish.api.CollectorOrder + 0.1
     label = "Collect Render"
