@@ -431,9 +431,6 @@ def get_scene_ocio_config(
     doc: c4d.documents.BaseDocument
 ) -> dict[str, Optional[str]]:
 
-    # Get scene OCIO config, display and view
-    config: str = doc.GetOcioConfigPath()
-
     # If OCIO management is not enabled then C4D renders using legacy (sRGB
     # linear workflow) for which we can't return a valid OCIO output.
     if doc[c4d.DOCUMENT_COLOR_MANAGEMENT] != c4d.DOCUMENT_COLOR_MANAGEMENT_OCIO:
@@ -441,34 +438,37 @@ def get_scene_ocio_config(
         # "Current Render Space: Legacy (sRGB linear workflow)"
         log.debug("Using legacy color management...")
         return {
-            "config": config,
+            "config": None,
             "display": None,
             "view": None,
             "colorspace": None
         }
 
-    display: str = ""
-    ocio_displays = doc.GetOcioDisplayColorSpaceNames()
-    if ocio_displays:
-        display = ocio_displays[doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE]]
+    # Get scene OCIO config, display and view
+    config: str = doc.GetOcioConfigPath()
 
-    view: str = ""
-    ocio_views = doc.GetOcioViewTransformNames()
-    if ocio_views:
-        # In some cases if the attribute was not explicitly set then C4D may
-        # raise `AttributeError: parameter access failed`. If that happens,
-        # we assume it's just the first index.
-        try:
-            view_index: int = doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM]
-        except AttributeError:
-            view_index = 0
+    display_index: int = doc[c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE]
+    display: str = doc.GetNameFromColorSpaceId(
+        c4d.DOCUMENT_OCIO_DISPLAY_COLORSPACE,
+        display_index
+    )
 
-        view = ocio_views[view_index]
+    # In some cases if the attribute was not explicitly set then C4D may
+    # raise `AttributeError: parameter access failed`. If that happens,
+    # we assume it's just the first index.
+    try:
+        view_index: int = doc[c4d.DOCUMENT_OCIO_VIEW_TRANSFORM]
+    except AttributeError:
+        view_index = 0
+    view: str = doc.GetNameFromColorSpaceId(
+        c4d.DOCUMENT_OCIO_VIEW_TRANSFORM,
+        view_index)
 
-    ocio_colorspaces: list[str] = doc.GetOcioRenderingColorSpaceNames()
-    colorspace: str = ocio_colorspaces[
-        doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE]
-    ]
+    colorspace_index: int = doc[c4d.DOCUMENT_OCIO_RENDER_COLORSPACE]
+    colorspace: str = doc.GetNameFromColorSpaceId(
+        c4d.DOCUMENT_OCIO_RENDER_COLORSPACE,
+        colorspace_index
+    )
 
     return {
         "config": config,
