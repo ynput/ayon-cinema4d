@@ -334,16 +334,21 @@ class CollectCinema4DRender(
             self.log.debug("Redshift Global AOV mode is disabled.")
             return products
 
+        self.log.debug("Collecting Redshift AOVs...")
         layer_index: int = 0
         for aov in lib_renderproducts.iter_redshift_aovs(redshift_vp):
-            self.log.debug(f"Found Redshift AOV: {aov}")
+            self.log.debug(f"  {aov}")
             if not aov.enabled:
                 continue
+
+            # TODO: Handle both Direct Output and Multi-pass output? How do we
+            #  label each if both are enabled for saving and are enabled for
+            #  the AOV? Do we track only one of the sequences or both?
 
             layer_index += 1
 
             # We only collect AOVs that are saved into separate files
-            is_separate_file: bool = aov.always_separate_file or aov.multipass
+            is_separate_file: bool = aov.always_separate_file or aov.multipass_enabled
             if not is_separate_file:
                 continue
 

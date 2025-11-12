@@ -245,10 +245,10 @@ class AOV:
     name: str = attr.ib()
     effective_name: str = attr.ib()
     aov_type: int = attr.ib()
-    multipass: bool = attr.ib()
-    file_enabled: bool = attr.ib()
-    filepath: str = attr.ib()
-    file_effective_path: str = attr.ib()
+    multipass_enabled: bool = attr.ib()    # Multi-pass Output enabled
+    direct_enabled: bool = attr.ib()       # Direct Output enabled
+    filepath: str = attr.ib()              # Direct Output path
+    file_effective_path: str = attr.ib()   # Effective path for direct output
 
     # If not allowed to be multilayer, then this AOV will still be written
     # as separate file when multi-layer file is enabled. For example, Redshift
@@ -299,9 +299,9 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV
             effective_name=aov.GetParameter(c4d.REDSHIFT_AOV_EFFECTIVE_NAME),
             aov_type=aov_type,
             enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_ENABLED)),
-            multipass=bool(
+            multipass_enabled=bool(
                 aov.GetParameter(c4d.REDSHIFT_AOV_MULTIPASS_ENABLED)),
-            file_enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_FILE_ENABLED)),
+            direct_enabled=bool(aov.GetParameter(c4d.REDSHIFT_AOV_FILE_ENABLED)),
             filepath=aov.GetParameter(c4d.REDSHIFT_AOV_FILE_PATH),
             file_effective_path=aov.GetParameter(
                 c4d.REDSHIFT_AOV_FILE_EFFECTIVE_PATH),
@@ -335,7 +335,9 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV
         # Global Remainder AOV
         if light_groups and light_group_mode == c4d.REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER:
             remainder_aov = copy.copy(global_aov)
-            remainder_aov.name += "_other"
+            # Only specify name if already set
+            if remainder_aov.name:
+                remainder_aov.name += "_other"
             remainder_aov.effective_name += "_other"
             yield remainder_aov
 
