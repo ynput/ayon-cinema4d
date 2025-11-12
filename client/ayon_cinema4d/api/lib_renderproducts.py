@@ -269,7 +269,6 @@ def get_redshift_light_groups(doc: c4d.documents.BaseDocument) -> set[str]:
     for obj in lib.iter_objects(doc.GetFirstObject()):
         if obj.GetType() != c4d.Orslight:
             continue
-        print(obj.GetName())
 
         light_group: str = obj[c4d.REDSHIFT_LIGHT_LIGHT_GROUP]
         if light_group:
