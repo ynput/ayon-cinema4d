@@ -341,22 +341,19 @@ class CollectCinema4DRender(
             if not aov.enabled:
                 continue
 
-            # TODO: Handle both Direct Output and Multi-pass output? How do we
-            #  label each if both are enabled for saving and are enabled for
-            #  the AOV? Do we track only one of the sequences or both?
-
-            layer_index += 1
-
-            # We only collect AOVs that are saved into separate files
-            is_separate_file: bool = aov.always_separate_file or aov.multipass_enabled
-            if not is_separate_file:
+            # AOV has no enabled outputs
+            if not aov.multipass_enabled and not aov.direct_enabled:
                 continue
 
+            layer_index += 1
             aov_name: str = aov.name or aov.effective_name
 
             # Get filepath without extension and the frame suffix that
             # Redshift already includes in the effective path
-            if aov.file_effective_path:
+            if aov.direct_enabled:
+                # TODO: File effective path does not work with e.g. Light
+                #  Groups because it will always return the direct AOV path
+                #  from C4D instead of our 'copied' aovs
                 filepath = os.path.splitext(aov.file_effective_path)[0]
                 filepath = filepath.rstrip("0123456789")
                 files = files_resolver_fn(filepath)
