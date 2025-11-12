@@ -2,6 +2,7 @@ from __future__ import annotations
 import attr
 import os
 import pyblish.api
+from typing import Optional
 
 import clique
 
@@ -22,13 +23,13 @@ class Cinema4DRenderInstance(publish.RenderInstance):
     frameStartHandle: int = attr.ib(default=None)
     frameEndHandle: int = attr.ib(default=None)
     renderData: c4d.documents.RenderData = attr.ib(default=None)
-    sceneRenderColorspace: str = attr.ib(default=None)
+    sceneRenderColorspace: Optional[str] = attr.ib(default=None)
 
     # Required for Submit Publish Job
     renderProducts: lib_renderproducts.ARenderProduct = attr.ib(default=None)
-    colorspaceConfig: str = attr.ib(default=None)
-    colorspaceDisplay: str = attr.ib(default=None)
-    colorspaceView: str = attr.ib(default=None)
+    colorspaceConfig: Optional[str] = attr.ib(default=None)
+    colorspaceDisplay: Optional[str] = attr.ib(default=None)
+    colorspaceView: Optional[str] = attr.ib(default=None)
 
 
 class CollectCinema4DRender(

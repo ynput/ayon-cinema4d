@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Any, Optional, Generator
+import logging
 import os
 import copy
 
@@ -10,8 +11,11 @@ import redshift
 
 from . import lib
 
+log = logging.getLogger(__name__)
+
 REDSHIFT_RENDER_ENGINE_ID = 1036219
 # ARNOLD_RENDER_ENGINE_ID = 1029988
+
 
 # See: https://developers.maxon.net/docs/py/2024_2_0/modules/c4d.documents/RenderData/index.html
 def find_video_post(
@@ -425,18 +429,21 @@ def get_scene_ocio_config(
     doc: c4d.documents.BaseDocument
 ) -> dict[str, Optional[str]]:
 
+    # Get scene OCIO config, display and view
+    config: str = doc.GetOcioConfigPath()
+
     # If OCIO management is not enabled then C4D renders using legacy (sRGB
     # linear workflow) for which we can't return a valid OCIO output.
     if doc[c4d.DOCUMENT_COLOR_MANAGEMENT] != c4d.DOCUMENT_COLOR_MANAGEMENT_OCIO:
+        # When in legacy mode Cinema4D describes it as
+        # "Current Render Space: Legacy (sRGB linear workflow)"
+        log.debug("Using legacy color management...")
         return {
-            "config": None,
+            "config": config,
             "display": None,
             "view": None,
             "colorspace": None
         }
-
-    # Get scene OCIO config, display and view
-    config: str = doc.GetOcioConfigPath()
 
     display: str = ""
     ocio_displays = doc.GetOcioDisplayColorSpaceNames()
