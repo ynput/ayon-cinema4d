@@ -1,7 +1,7 @@
 from __future__ import annotations
 import inspect
 
-from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline import CreatedInstance, AYON_INSTANCE_ID
 from ayon_cinema4d.api import lib, plugin
 
 import c4d
@@ -29,40 +29,89 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
     product_type = "render"
     icon = "eye"
 
+    _required_keys = ("creator_identifier", "productName")
+
+    def _is_marked_workfile_as_render_enabled(self, take_data) -> bool:
+        """Return whether the detecting of Takes as render instances is
+        enabled in the current workfile.
+
+        This will be true if at least one Take in the scene has render instance
+        data imprinted onto it.
+        """
+        for take in lib.iter_objects(take_data.GetMainTake()):
+            data = self._read_instance_node(take)
+            if all(key in data for key in self._required_keys):
+                return True
+        return False
+
     def create(self, product_name, instance_data, pre_create_data):
-        pass
-        # TODO
+
         # On creating a first renderlayer instance, we tag the scene so that
         # from that moment onwards, we collect all takes as renderlayers.
         # So we put some data somewhere that says, "takes are now collected".
         # self._mark_workfile_as_render_enabled()
 
-        # Add a take so that at least something happens on Create for the user
-        # (unless this is the first one and the variant is Main?)
-
-        # Then directly refresh with all existing entries
-        # self.collect_instances()
-
-    def collect_instances(self):
-        # TODO
-        # if not self._is_marked_workfile_as_render_enabled():
-        #     return
-
-        required_keys = ("creator_identifier", "productName")
-
-        # Each Cinema4D Take is considered a renderlayer
-        # Each take can have its own "Render Settings" overrides
-        # As such each take may have its own "Render Data" and "Video Post"
-        # as a result it can have different frame ranges, renderer, etc.
-        # and also different output filepath settings.
-        # TODO: Support different render settings in a Take.
-        # See: https://developers.maxon.net/docs/Cinema4DCPPSDK/page_overview_takesystem.html  # noqa
         doc: c4d.documents.BaseDocument = c4d.documents.GetActiveDocument()
         take_data = doc.GetTakeData()
+        if take_data is None:
+            return
+
+        instance_node = None
+        variant_name: str = instance_data.get("variant", "Main")
+        print(variant_name)
+        if not self._is_marked_workfile_as_render_enabled(take_data):
+            # If there's already a take with the variant name, we skip creating
+            # a new take but instead just mark the existing take
+            for take in lib.iter_objects(take_data.GetMainTake()):
+                if take.GetName() == variant_name:
+                    # If there's already a take with the variant name,
+                    # we do nothing
+                    instance_node = take
+
+        # Create a new take
+        if instance_node is None:
+            # Add a take so that at least something happens on Create for the
+            # user
+            root = take_data.GetMainTake()
+            instance_node = take_data.AddTake(variant_name, root, None)
+            c4d.EventAdd()
+
+        # Enforce forward compatibility to avoid the instance to default
+        # to the legacy `AVALON_INSTANCE_ID`
+        instance_data["id"] = AYON_INSTANCE_ID
+        # Use the uniqueness of the node in Cinema4D as the instance id
+        instance_data["instance_id"] = str(hash(instance_node))
+        instance = CreatedInstance(
+            product_type=self.product_type,
+            product_name=product_name,
+            data=instance_data,
+            transient_data={
+                "instance_node": instance_node,
+                "take": instance_node
+            },
+            creator=self,
+        )
+
+        # Store the instance data
+        data = instance.data_to_store()
+        self.imprint_instance_node(instance_node, data)
+
+        self._add_instance_to_context(instance)
+
+        # Then directly refresh with all existing entries
+        self.collect_instances()
+
+    def collect_instances(self):
+        doc: c4d.documents.BaseDocument = c4d.documents.GetActiveDocument()
+        take_data = doc.GetTakeData()
+        if not self._is_marked_workfile_as_render_enabled(take_data):
+            return
+
+        # Each Cinema4D Take is considered a renderlayer
         for take in lib.iter_objects(take_data.GetMainTake()):
 
             data = self._read_instance_node(take)
-            if all(key in data for key in required_keys):
+            if all(key in data for key in self._required_keys):
                 data = self.read_take_overrides(take, data)
                 instance = CreatedInstance.from_existing(data, creator=self)
             else:
@@ -190,8 +239,29 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
         self._imprint(node, data)
 
     def remove_instances(self, instances):
-        # TODO: Disallow 'deleting the "Main" take because it can't be removed
-        super().remove_instances(instances)
+        # Disallow 'deleting the "Main" take because it can't be removed
+        for instance in instances:
+            take: c4d.modules.takesystem.BaseTake = (
+                instance.transient_data.get("take")
+            )
+            if not take:
+                continue
+
+            if take.IsMain():
+                # Remove any imprinted instance data, but avoid deleting it
+                # because deleting the main take will crash Cinema4D
+                existing_user_data = take.GetUserDataContainer()
+                instance_data_keys = set(instance.data_to_store().keys())
+                for description_id, base_container in existing_user_data:
+                    key = base_container[c4d.DESC_NAME]
+                    if key in instance_data_keys:
+                        take.RemoveUserData(description_id)
+            else:
+                take.Remove()
+
+            # Remove the collected CreatedInstance to remove from UI directly
+            self._remove_instance_from_context(instance)
+        c4d.EventAdd()
 
     def get_pre_create_attr_defs(self):
         return []
