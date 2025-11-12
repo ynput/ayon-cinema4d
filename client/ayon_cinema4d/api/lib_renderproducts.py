@@ -335,8 +335,8 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV
         # Global Remainder AOV
         if light_groups and light_group_mode == c4d.REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER:
             remainder_aov = copy.copy(global_aov)
-            remainder_aov.name += "_remainder"
-            remainder_aov.effective_name += "_remainder"
+            remainder_aov.name += "_other"
+            remainder_aov.effective_name += "_other"
             yield remainder_aov
 
         # AOV output per light group
