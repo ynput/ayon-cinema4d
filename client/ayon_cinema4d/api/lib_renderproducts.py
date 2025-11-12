@@ -1,11 +1,14 @@
 from __future__ import annotations
 from typing import Any, Optional, Generator
 import os
+import copy
 
 import attr
 
 import c4d.documents
 import redshift
+
+from . import lib
 
 REDSHIFT_RENDER_ENGINE_ID = 1036219
 # ARNOLD_RENDER_ENGINE_ID = 1029988
@@ -257,25 +260,36 @@ class AOV:
         return self.name
 
 
+def get_redshift_light_groups(doc: c4d.documents.BaseDocument) -> set[str]:
+    light_groups: set[str] = set()
+    for obj in lib.iter_objects(doc.GetFirstObject()):
+        if obj.GetType() != c4d.Orslight:
+            continue
+        print(obj.GetName())
+
+        light_group: str = obj[c4d.REDSHIFT_LIGHT_LIGHT_GROUP]
+        if light_group:
+            light_groups.add(light_group)
+
+    return light_groups
+
+
 def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV, None, None]:
-    """Using a Video Post from Redshift render yield all Redshift AOVs."""
+    """Using a Video Post from Redshift render yield all Redshift AOVs.
+
+    This may separate light-groups into separate AOVs.
+    """
     aovs = redshift.RendererGetAOVs(video_post)
+    scene_light_groups = get_redshift_light_groups(video_post.GetDocument())
+
     for aov in aovs:
-        # TODO: Support light-groups in separate FILES
-        # Light group settings
-        # REDSHIFT_AOV_LIGHTGROUP_ALL: int = 1025
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV: int = 1024
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_ALL: int = 1
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_NONE: int = 0
-        # REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER: int = 2
-        # REDSHIFT_AOV_LIGHTGROUP_NAMES: int = 1026
         # Redshift Cryptomatte is always separate
         aov_type: int = aov.GetParameter(c4d.REDSHIFT_AOV_TYPE)
         always_separate_file = False
         if aov_type == c4d.REDSHIFT_AOV_TYPE_CRYPTOMATTE:
             always_separate_file = True
 
-        yield AOV(
+        global_aov = AOV(
             item=aov,
             name=aov.GetParameter(c4d.REDSHIFT_AOV_NAME),
             effective_name=aov.GetParameter(c4d.REDSHIFT_AOV_EFFECTIVE_NAME),
@@ -289,6 +303,45 @@ def iter_redshift_aovs(video_post: c4d.documents.BaseVideoPost) -> Generator[AOV
                 c4d.REDSHIFT_AOV_FILE_EFFECTIVE_PATH),
             always_separate_file=always_separate_file
         )
+
+        if global_aov.effective_name == "Z":
+            # Z AOV gets merged into main layer?
+            continue
+
+        # The list of returned light group names may contain 'unused' entries
+        # that do not exist (anymore?) so we must filter the list against the
+        # scene light groups.
+        light_groups: list[str] = [
+            lg.strip() for lg in
+            aov.GetParameter(c4d.REDSHIFT_AOV_LIGHTGROUP_NAMES).split("\n")
+        ]
+        light_groups = [
+            lg for lg in light_groups if lg and lg in scene_light_groups
+        ]
+        all_light_groups: bool = aov.GetParameter(c4d.REDSHIFT_AOV_LIGHTGROUP_ALL)
+        if all_light_groups:
+            light_groups = list(scene_light_groups)
+
+        light_group_mode: int = aov.GetParameter(c4d.REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV)  # noqa
+
+        # Global AOV (Main output)
+        if not light_groups or light_group_mode == c4d.REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_ALL:
+            yield global_aov
+
+        # Global Remainder AOV
+        if light_groups and light_group_mode == c4d.REDSHIFT_AOV_LIGHTGROUP_GLOBALAOV_REMAINDER:
+            remainder_aov = copy.copy(global_aov)
+            remainder_aov.name += "_remainder"
+            remainder_aov.effective_name += "_remainder"
+            yield remainder_aov
+
+        # AOV output per light group
+        for light_group in light_groups:
+            light_aov = copy.copy(global_aov)
+            if light_aov.name:
+                light_aov.name += f"_{light_group}"
+            light_aov.effective_name += f"_{light_group}"
+            yield light_aov
 
 
 @attr.s

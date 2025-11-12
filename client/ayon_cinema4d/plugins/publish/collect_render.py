@@ -333,16 +333,20 @@ class CollectCinema4DRender(
             self.log.debug("Redshift Global AOV mode is disabled.")
             return products
 
+        layer_index: int = 0
         for aov in lib_renderproducts.iter_redshift_aovs(redshift_vp):
-            # TODO: Support AOV light groups
             self.log.debug(f"Found Redshift AOV: {aov}")
             if not aov.enabled:
                 continue
+
+            layer_index += 1
 
             # We only collect AOVs that are saved into separate files
             is_separate_file: bool = aov.always_separate_file or aov.multipass
             if not is_separate_file:
                 continue
+
+            aov_name: str = aov.name or aov.effective_name
 
             # Get filepath without extension and the frame suffix that
             # Redshift already includes in the effective path
@@ -351,20 +355,31 @@ class CollectCinema4DRender(
                 filepath = filepath.rstrip("0123456789")
                 files = files_resolver_fn(filepath)
             else:
-                # For whatever reason the Depth AOV comes out of "$userpass"
+                # Make a copy because we may alter it for AOV suffix
+                multipass_token_path_aov = multipass_token_path
+
+                # For whatever reason the Depth AOV comes out as "$userpass"
                 # instead of the effective name "Z".
                 layer_name: str = aov.name or aov.effective_name
                 if not aov.name and aov.effective_name == "Z":
                     layer_name = "$userpass"
 
+                # Add layer name suffix
+                add_automated_layer_name: bool = (
+                    "$pass" not in multipass_token_path_aov
+                    and "$userpass" not in multipass_token_path_aov
+                )
+                if add_automated_layer_name:
+                    filename_suffix = f"_{aov_name.lower()}_{layer_index}"
+                    multipass_token_path_aov += filename_suffix
+
                 # Format the filepath based on the render data's token
                 # path
                 files = files_resolver_fn(
-                    multipass_token_path,
+                    multipass_token_path_aov,
                     layer_name=layer_name,
                     layer_type_name=aov.effective_name,
                 )
 
-            aov_name: str = aov.name or aov.effective_name
             products[aov_name] = files
         return products
