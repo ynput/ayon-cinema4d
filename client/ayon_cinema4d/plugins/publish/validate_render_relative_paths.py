@@ -112,11 +112,11 @@ class ValidateRenderRelativePaths(
             
             The render output paths must be absolute paths.
 
-            Relative paths can lead to renders being saved in unexpected 
-            locations due to the render possibly occurring from a published 
+            Relative paths can lead to renders being saved in unexpected
+            locations due to the render possibly occurring from a published
             workfile.
             
-            Use the 'Repair' action to convert relative paths to 
+            Use the 'Repair' action to convert relative paths to
             absolute paths based on the current Cinema4D project folder.
         """
         )
