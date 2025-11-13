@@ -201,6 +201,7 @@ class CollectCinema4DRender(
             """Return filepaths for all frames with given token path and
             layer names."""
             files: list[str] = []
+            token_path = self._abspath(doc, token_path)
             for frame in range(
                 render_instance.frameStartHandle,
                 render_instance.frameEndHandle + 1,
@@ -288,7 +289,6 @@ class CollectCinema4DRender(
         render_data,
         files_resolver
     ) -> dict[str, list[str]]:
-
         multipass_token_path: str = render_data[c4d.RDATA_MULTIPASS_FILENAME]
         self.log.debug(
             f"Collected Multi-Pass Filepath: {multipass_token_path}"
@@ -392,3 +392,15 @@ class CollectCinema4DRender(
 
             products[aov_name] = files
         return products
+
+    def _abspath(self, doc, path: str) -> str:
+        """Return absolute path from possibly relative path."""
+        if os.path.isabs(path):
+            return path
+
+        project_folder: str = doc.GetDocumentPath()
+        abs_path: str = os.path.normpath(os.path.join(project_folder, path))
+        self.log.debug(
+            f"Resolved relative path '{path}' to absolute path '{abs_path}'"
+        )
+        return abs_path
