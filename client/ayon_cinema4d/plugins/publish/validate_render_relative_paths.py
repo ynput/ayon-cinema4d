@@ -26,6 +26,7 @@ class ValidateRenderRelativePaths(
     instead of the expected location.
 
     """
+
     label = "Validate Render Relative Paths"
     order = pyblish.api.ValidatorOrder
     families = ["render"]
@@ -40,9 +41,9 @@ class ValidateRenderRelativePaths(
 
         doc: c4d.documents.BaseDocument = instance.context.data["doc"]
         take_data = doc.GetTakeData()
-        take: c4d.modules.takesystem.BaseTake = (
-            instance.data["transientData"]["take"]
-        )
+        take: c4d.modules.takesystem.BaseTake = instance.data["transientData"][
+            "take"
+        ]
         render_data, base_take = take.GetEffectiveRenderData(take_data)
         invalid: bool = False
 
@@ -60,7 +61,7 @@ class ValidateRenderRelativePaths(
         # Multi-Pass image
         save_multipass_image: bool = render_data[c4d.RDATA_MULTIPASS_SAVEIMAGE]
         if save_multipass_image:
-            token_path: str  = render_data[c4d.RDATA_MULTIPASS_FILENAME]
+            token_path: str = render_data[c4d.RDATA_MULTIPASS_FILENAME]
             if not os.path.isabs(token_path):
                 self.log.error(
                     "Multi-Pass Image render output path is relative:\n"
@@ -71,13 +72,11 @@ class ValidateRenderRelativePaths(
         if invalid:
             raise PublishValidationError(
                 "Please use an absolute path for render output.",
-                description=self.get_description()
+                description=self.get_description(),
             )
-
 
     @classmethod
     def repair(cls, instance: pyblish.api.Instance):
-
         current_file = instance.context.data["currentFile"]
         if not current_file:
             raise RuntimeError(
@@ -89,9 +88,9 @@ class ValidateRenderRelativePaths(
 
         doc: c4d.documents.BaseDocument = instance.context.data["doc"]
         take_data = doc.GetTakeData()
-        take: c4d.modules.takesystem.BaseTake = (
-            instance.data["transientData"]["take"]
-        )
+        take: c4d.modules.takesystem.BaseTake = instance.data["transientData"][
+            "take"
+        ]
         render_data, base_take = take.GetEffectiveRenderData(take_data)
 
         for key, label in RENDER_DATA_KEYS.items():
@@ -119,4 +118,5 @@ class ValidateRenderRelativePaths(
             
             Use the 'Repair' action to convert relative paths to 
             absolute paths based on the current Cinema4D project folder.
-        """)
+        """
+        )
