@@ -401,7 +401,7 @@ def render_playblast(filepath,
     if frame_end is None:
         frame_end = doc.GetMaxTime().GetFrame(doc_fps)
 
-    renderdata = doc.GetActiveRenderData().GetData()
+    renderdata = doc.GetActiveRenderData().GetDataInstance()
     previous_render_engine = renderdata[c4d.RDATA_RENDERENGINE]
     renderdata[c4d.RDATA_RENDERENGINE] = c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE
 

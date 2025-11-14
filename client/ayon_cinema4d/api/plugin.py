@@ -140,8 +140,7 @@ class Cinema4DCreator(Creator):
         for obj in shared_data["cinema4d_cached_instances"].get(
                 self.identifier, []):
 
-            data = lib.read(obj)
-            data["instance_id"] = str(hash(obj))
+            data = self._read_instance_node(obj)
 
             # Add instance
             created_instance = CreatedInstance.from_existing(data, self)
@@ -156,6 +155,7 @@ class Cinema4DCreator(Creator):
             new_data = created_inst.data_to_store()
             node = created_inst.transient_data["instance_node"]
             self._imprint(node, new_data)
+        c4d.EventAdd()
 
     def remove_instances(self, instances):
         for instance in instances:
@@ -167,6 +167,7 @@ class Cinema4DCreator(Creator):
 
             # Remove the collected CreatedInstance to remove from UI directly
             self._remove_instance_from_context(instance)
+        c4d.EventAdd()
 
     def _imprint(self, node, data):
 
@@ -174,6 +175,11 @@ class Cinema4DCreator(Creator):
         data.pop("instance_id", None)
 
         lib.imprint(node, data, group="AYON")
+
+    def _read_instance_node(self, obj) -> dict:
+        data = lib.read(obj)
+        data["instance_id"] = str(hash(obj))
+        return data
 
     def get_pre_create_attr_defs(self):
         return [

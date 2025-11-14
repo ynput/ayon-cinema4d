@@ -20,4 +20,7 @@ ayon_required_addons = {
 }
 # Mapping of addon name to version requirements
 # - if addon is used in same bundle the version range must be valid
-ayon_compatible_addons = {}
+ayon_compatible_addons = {
+    # Needs Deadline support for Cinema4D render submissions
+    "deadline": ">=0.5.19",
+}
