@@ -44,9 +44,6 @@ AYON_CONTEXT_CREATOR_IDENTIFIER = "io.ayon.create.context"
 class Cinema4DHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "cinema4d"
 
-    def __init__(self):
-        super(Cinema4DHost, self).__init__()
-
     def install(self):
         # process path mapping
         # dirmap_processor = Cinema4DDirmap("cinema4d", project_settings)
