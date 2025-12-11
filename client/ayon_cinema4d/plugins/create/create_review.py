@@ -11,6 +11,7 @@ class CreateReview(plugin.Cinema4DCreator):
     label = "Review"
     description = __doc__
     product_type = "review"
+    product_base_type = "review"
     icon = "video-camera"
 
     def get_instance_attr_defs(self):

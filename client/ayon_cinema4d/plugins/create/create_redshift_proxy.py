@@ -10,6 +10,7 @@ class CreateRedshiftProxy(plugin.Cinema4DCreator):
     identifier = "io.ayon.creators.cinema4d.redshiftproxy"
     label = "Redshift Proxy"
     product_type = "redshiftproxy"
+    product_base_type = "redshiftproxy"
     description = __doc__
     icon = "cubes"
 
