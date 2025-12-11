@@ -12,6 +12,7 @@ class CreateCamera(plugin.Cinema4DCreator):
     label = "Camera"
     description = __doc__
     product_type = "camera"
+    product_base_type = "camera"
     icon = "video-camera"
 
     def get_instance_attr_defs(self):

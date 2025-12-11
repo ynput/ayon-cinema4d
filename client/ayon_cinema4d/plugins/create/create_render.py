@@ -27,6 +27,7 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
     description = "Create a render product per Cinema4D Take."
     detailed_description = inspect.cleandoc(__doc__)
     product_type = "render"
+    product_base_type = "render"
     icon = "eye"
 
     _required_keys = ("creator_identifier", "productName")

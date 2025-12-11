@@ -11,6 +11,7 @@ class CreatePointcache(plugin.Cinema4DCreator):
     label = "Pointcache"
     description = __doc__
     product_type = "pointcache"
+    product_base_type = "pointcache"
     icon = "cubes"
 
     def get_instance_attr_defs(self):
