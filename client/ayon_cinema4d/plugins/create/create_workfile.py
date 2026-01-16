@@ -54,7 +54,7 @@ class CreateWorkfile(AutoCreator):
             data = {
                 "folderPath": folder_path,
                 "task": task_name,
-                "variant": task_name,
+                "variant": self.default_variant,
             }
 
             # Enforce forward compatibility to avoid the instance to default
