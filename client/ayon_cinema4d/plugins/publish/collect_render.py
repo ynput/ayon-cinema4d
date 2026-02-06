@@ -73,7 +73,10 @@ class CollectCinema4DRender(
                 continue
 
             product_type = inst.data["productType"]
-            if product_type != "render":
+            product_base_type = inst.data.get("productBaseType")
+            if not product_base_type:
+                product_base_type = product_type
+            if product_base_type != "render":
                 continue
 
             # Get take from instance
@@ -97,9 +100,18 @@ class CollectCinema4DRender(
 
             instance_families = inst.data.get("families", [])
             product_name = inst.data["productName"]
-            instance = Cinema4DRenderInstance(
+            kwargs = dict(
                 productType=product_type,
-                family=product_type,
+                productBaseType=product_base_type,
+            )
+            if "productBaseType" not in attr.fields_dict(
+                Cinema4DRenderInstance
+            ):
+                kwargs["productType"] = kwargs.pop("productBaseType")
+
+            instance = Cinema4DRenderInstance(
+                **kwargs,
+                family=product_base_type,
                 families=instance_families,
                 version=version,
                 time="",
