@@ -1,6 +1,6 @@
 name = "cinema4d"
 title = "Cinema4D"
-version = "0.1.11"
+version = "0.1.11+dev"
 
 # Name of client code directory imported in AYON launcher
 # - do not specify if there is no client code
