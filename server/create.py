@@ -27,17 +27,17 @@ class BaseCreatePluginModel(BaseSettingsModel):
 class CreatePluginsModel(BaseSettingsModel):
     RenderlayerCreator: BaseCreatePluginModel = SettingsField(
         title="Create Render",
-        defaul_factory=BaseCreatePluginModel,
+        default_factory=BaseCreatePluginModel,
     )
     CreateCamera: BaseCreatePluginModel = SettingsField(
         title="Create Camera",
-        defaul_factory=BaseCreatePluginModel,
+        default_factory=BaseCreatePluginModel,
     )
     CreatePointcache: BaseCreatePluginModel = SettingsField(
         title="Create Pointcache",
-        defaul_factory=BaseCreatePluginModel,
+        default_factory=BaseCreatePluginModel,
     )
     CreateRedshiftProxy: BaseCreatePluginModel = SettingsField(
         title="Create Redshift Proxy",
-        defaul_factory=BaseCreatePluginModel,
+        default_factory=BaseCreatePluginModel,
     )
