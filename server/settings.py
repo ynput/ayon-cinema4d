@@ -1,6 +1,7 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 from .imageio import DEFAULT_IMAGEIO_SETTINGS, Cinema4DImageIOModel
+from .create import CreatePluginsModel
 from .publish import DEFAULT_PUBLISH_SETTINGS, PublishPluginsModel
 
 DEFAULT_VALUES = {
@@ -14,6 +15,11 @@ class Cinema4DSettings(BaseSettingsModel):
         default_factory=Cinema4DImageIOModel,
         title="Color Management (ImageIO)"
     )
+    create: CreatePluginsModel = SettingsField(
+        default_factory=CreatePluginsModel,
+        title="Create plugins",
+    )
     publish: PublishPluginsModel = SettingsField(
-        default_factory=PublishPluginsModel, title="Publish plugins"
+        default_factory=PublishPluginsModel,
+        title="Publish plugins",
     )

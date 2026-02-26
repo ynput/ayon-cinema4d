@@ -16,11 +16,11 @@ project_can_override_addon_version = True
 # Mapping of addon name to version requirements
 # - addon with specified version range must exist to be able to use this addon
 ayon_required_addons = {
-    "core": ">0.4.4",
+    "core": ">=1.8.2",
 }
 # Mapping of addon name to version requirements
 # - if addon is used in same bundle the version range must be valid
 ayon_compatible_addons = {
     # Needs Deadline support for Cinema4D render submissions
-    "deadline": ">=0.5.19",
+    "deadline": ">=0.7.0",
 }

@@ -28,7 +28,7 @@ def _set_frame_range(frame_start: int, frame_end: int, fps: float):
 class SetFrameRangeLoader(load.LoaderPlugin):
     """Set frame range excluding pre- and post-handles"""
 
-    product_types = {
+    product_base_types = {
         "animation",
         "camera",
         "pointcache",
@@ -39,6 +39,7 @@ class SetFrameRangeLoader(load.LoaderPlugin):
         "mayaScene",
         "review"
     }
+    product_types = product_base_types
     representations = {"*"}
 
     label = "Set frame range"
@@ -66,7 +67,7 @@ class SetFrameRangeLoader(load.LoaderPlugin):
 class SetFrameRangeWithHandlesLoader(load.LoaderPlugin):
     """Set frame range including pre- and post-handles"""
 
-    product_types = {
+    product_base_types = {
         "animation",
         "camera",
         "pointcache",
@@ -77,6 +78,7 @@ class SetFrameRangeWithHandlesLoader(load.LoaderPlugin):
         "mayaScene",
         "review"
     }
+    product_types = product_base_types
     representations = {"*"}
 
     label = "Set frame range (with handles)"

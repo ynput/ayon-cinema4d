@@ -7,7 +7,8 @@ class LoadVolume(plugin.Cinema4DSingleObjLoader):
     """Load VDB to Volume Loader."""
 
     color = "orange"
-    product_types = {"*"}
+    product_base_types = {"*"}
+    product_types = product_base_types
     icon = "cloud"
     label = "Load VDB to Volume Loader"
     order = -10

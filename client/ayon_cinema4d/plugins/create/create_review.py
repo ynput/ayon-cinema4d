@@ -10,8 +10,8 @@ class CreateReview(plugin.Cinema4DCreator):
     identifier = "io.ayon.creators.cinema4d.review"
     label = "Review"
     description = __doc__
-    product_type = "review"
     product_base_type = "review"
+    product_type = product_base_type
     icon = "video-camera"
 
     def get_instance_attr_defs(self):
