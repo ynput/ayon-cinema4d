@@ -15,6 +15,10 @@ class ProductTypeItemModel(BaseSettingsModel):
 
 
 class BaseCreatePluginModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        default=True,
+        title="Enabled"
+    )
     product_type_items: list[ProductTypeItemModel] = SettingsField(
         default_factory=list,
         title="Product type items",
