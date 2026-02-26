@@ -98,8 +98,9 @@ def parent_to_ayon_null(obj, doc=None):
 
 
 class Cinema4DCreator(Creator):
-    default_variants = ['Main']
+    default_variants = ["Main"]
     settings_category = "cinema4d"
+    skip_discovery = True
 
     def create(self, product_name, instance_data, pre_create_data):
 
@@ -196,6 +197,7 @@ class Cinema4DCreator(Creator):
 class Cinema4DLoader(LoaderPlugin):
     hosts = ["cinema4d"]
     settings_category = "cinema4d"
+    skip_discovery = True
 
     def get_name_and_namespace(self, context, name, namespace, doc=None):
         if doc is None:
@@ -228,6 +230,7 @@ class Cinema4DSingleObjLoader(Cinema4DLoader, ABC):
 
     Instead of containerizing on a hidden selection object this imprints the
     node itself as a container."""
+    skip_discovery = True
 
     @property
     @abstractmethod
