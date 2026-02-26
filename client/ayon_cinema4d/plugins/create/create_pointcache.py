@@ -10,8 +10,8 @@ class CreatePointcache(plugin.Cinema4DCreator):
     identifier = "io.ayon.creators.cinema4d.pointcache"
     label = "Pointcache"
     description = __doc__
-    product_type = "pointcache"
     product_base_type = "pointcache"
+    product_type = product_base_type
     icon = "cubes"
 
     def get_instance_attr_defs(self):

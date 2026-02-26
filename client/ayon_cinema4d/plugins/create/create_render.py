@@ -26,8 +26,8 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
     label = "Render"
     description = "Create a render product per Cinema4D Take."
     detailed_description = inspect.cleandoc(__doc__)
-    product_type = "render"
     product_base_type = "render"
+    product_type = product_base_type
     icon = "eye"
 
     _required_keys = ("creator_identifier", "productName")
@@ -172,6 +172,9 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
 
         host_name = self.create_context.host_name
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         # Always keep product name in sync with the take name
         product_name = self.get_product_name(
             project_name,
@@ -179,6 +182,7 @@ class RenderlayerCreator(plugin.Cinema4DCreator):
             task_entity,
             variant,
             host_name,
+            product_type=product_type,
         )
         instance_data["productName"] = product_name
         instance_data["variant"] = variant

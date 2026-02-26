@@ -117,8 +117,12 @@ class Cinema4DCreator(Creator):
         instance_data["id"] = AYON_INSTANCE_ID
         # Use the uniqueness of the node in Cinema4D as the instance id
         instance_data["instance_id"] = str(hash(instance_node))
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         instance = CreatedInstance(
-            product_type=self.product_type,
+            product_base_type=self.product_base_type,
+            product_type=product_type,
             product_name=product_name,
             data=instance_data,
             creator=self,

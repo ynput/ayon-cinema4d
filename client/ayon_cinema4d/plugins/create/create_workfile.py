@@ -13,8 +13,8 @@ class CreateWorkfile(AutoCreator):
     """
     identifier = "io.ayon.creators.cinema4d.workfile"
     label = "Workfile"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     icon = "fa5.file"
     default_variant = "Main"
 
@@ -50,6 +50,7 @@ class CreateWorkfile(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=self.product_base_type,
             )
             data = {
                 "folderPath": folder_path,
@@ -88,6 +89,7 @@ class CreateWorkfile(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=self.product_base_type,
             )
 
             workfile_instance["folderPath"] = folder_path
