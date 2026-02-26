@@ -69,6 +69,13 @@ class ExtractCameraAlembic(ExtractAlembic):
     label = "Camera (Alembic)"
     families = ["camera"]
 
+    camera_types = {
+        # Camera
+        c4d.Ocamera,
+        # Redshift Camera
+        c4d.Orscamera
+    }
+
     def filter_objects(self, nodes):
-        return [obj for obj in nodes if obj.GetType() == c4d.CameraObject]
+        return [obj for obj in nodes if obj.GetType() in self.camera_types]
 
