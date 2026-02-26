@@ -33,6 +33,10 @@ class ExtractAlembic(publish.Extractor):
         path = os.path.join(dir_path, filename)
 
         export_nodes = self.filter_objects(nodes)
+        if not export_nodes:
+            raise publish.KnownPublishError(
+                f"No valid objects found to export in members: {nodes}"
+            )
 
         # Perform alembic extraction
         with lib.maintained_selection():
