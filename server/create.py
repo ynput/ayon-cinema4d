@@ -41,3 +41,7 @@ class CreatePluginsModel(BaseSettingsModel):
         title="Create Redshift Proxy",
         default_factory=BaseCreatePluginModel,
     )
+    CreateReview: BaseCreatePluginModel = SettingsField(
+        title="Create Review",
+        default_factory=BaseCreatePluginModel,
+    )
