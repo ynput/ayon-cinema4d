@@ -61,17 +61,6 @@ class CreateWorkfile(AutoCreator):
             # Enforce forward compatibility to avoid the instance to default
             # to the legacy `AVALON_INSTANCE_ID`
             data["id"] = AYON_INSTANCE_ID
-
-            data.update(
-                self.get_dynamic_data(
-                    project_name,
-                    folder_entity,
-                    task_entity,
-                    task_name,
-                    host_name,
-                    workfile_instance,
-                )
-            )
             self.log.info("Auto-creating workfile instance...")
             workfile_instance = CreatedInstance(
                 self.product_type, product_name, data, self
