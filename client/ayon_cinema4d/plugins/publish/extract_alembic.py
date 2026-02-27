@@ -33,6 +33,10 @@ class ExtractAlembic(publish.Extractor):
         path = os.path.join(dir_path, filename)
 
         export_nodes = self.filter_objects(nodes)
+        if not export_nodes:
+            raise publish.KnownPublishError(
+                f"No valid objects found to export in members: {nodes}"
+            )
 
         # Perform alembic extraction
         with lib.maintained_selection():
@@ -69,6 +73,13 @@ class ExtractCameraAlembic(ExtractAlembic):
     label = "Camera (Alembic)"
     families = ["camera"]
 
+    camera_types = {
+        # Camera
+        c4d.Ocamera,
+        # Redshift Camera
+        c4d.Orscamera
+    }
+
     def filter_objects(self, nodes):
-        return [obj for obj in nodes if obj.GetType() == c4d.CameraObject]
+        return [obj for obj in nodes if obj.GetType() in self.camera_types]
 
