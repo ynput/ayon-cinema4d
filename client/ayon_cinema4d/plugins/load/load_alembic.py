@@ -7,7 +7,8 @@ class AlembicLoader(plugin.Cinema4DLoader):
     """Load the camera."""
 
     color = "orange"
-    product_types = {"*"}
+    product_base_types = {"*"}
+    product_types = product_base_types
     icon = "code-fork"
     label = "Load Alembic"
     order = -10

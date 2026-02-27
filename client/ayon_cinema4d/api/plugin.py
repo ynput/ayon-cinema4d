@@ -98,8 +98,9 @@ def parent_to_ayon_null(obj, doc=None):
 
 
 class Cinema4DCreator(Creator):
-    default_variants = ['Main']
+    default_variants = ["Main"]
     settings_category = "cinema4d"
+    skip_discovery = True
 
     def create(self, product_name, instance_data, pre_create_data):
 
@@ -117,8 +118,12 @@ class Cinema4DCreator(Creator):
         instance_data["id"] = AYON_INSTANCE_ID
         # Use the uniqueness of the node in Cinema4D as the instance id
         instance_data["instance_id"] = str(hash(instance_node))
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         instance = CreatedInstance(
-            product_type=self.product_type,
+            product_base_type=self.product_base_type,
+            product_type=product_type,
             product_name=product_name,
             data=instance_data,
             creator=self,
@@ -192,6 +197,7 @@ class Cinema4DCreator(Creator):
 class Cinema4DLoader(LoaderPlugin):
     hosts = ["cinema4d"]
     settings_category = "cinema4d"
+    skip_discovery = True
 
     def get_name_and_namespace(self, context, name, namespace, doc=None):
         if doc is None:
@@ -224,6 +230,7 @@ class Cinema4DSingleObjLoader(Cinema4DLoader, ABC):
 
     Instead of containerizing on a hidden selection object this imprints the
     node itself as a container."""
+    skip_discovery = True
 
     @property
     @abstractmethod

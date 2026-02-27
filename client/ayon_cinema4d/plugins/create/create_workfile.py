@@ -13,8 +13,8 @@ class CreateWorkfile(AutoCreator):
     """
     identifier = "io.ayon.creators.cinema4d.workfile"
     label = "Workfile"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     icon = "fa5.file"
     default_variant = "Main"
 
@@ -50,6 +50,7 @@ class CreateWorkfile(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=self.product_base_type,
             )
             data = {
                 "folderPath": folder_path,
@@ -60,17 +61,6 @@ class CreateWorkfile(AutoCreator):
             # Enforce forward compatibility to avoid the instance to default
             # to the legacy `AVALON_INSTANCE_ID`
             data["id"] = AYON_INSTANCE_ID
-
-            data.update(
-                self.get_dynamic_data(
-                    project_name,
-                    folder_entity,
-                    task_entity,
-                    task_name,
-                    host_name,
-                    workfile_instance,
-                )
-            )
             self.log.info("Auto-creating workfile instance...")
             workfile_instance = CreatedInstance(
                 self.product_type, product_name, data, self
@@ -88,6 +78,7 @@ class CreateWorkfile(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=self.product_base_type,
             )
 
             workfile_instance["folderPath"] = folder_path

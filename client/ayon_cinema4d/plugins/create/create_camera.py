@@ -11,8 +11,8 @@ class CreateCamera(plugin.Cinema4DCreator):
     identifier = "io.ayon.creators.cinema4d.camera"
     label = "Camera"
     description = __doc__
-    product_type = "camera"
     product_base_type = "camera"
+    product_type = product_base_type
     icon = "video-camera"
 
     def get_instance_attr_defs(self):
