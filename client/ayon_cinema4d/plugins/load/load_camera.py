@@ -9,7 +9,8 @@ class CameraLoader(plugin.Cinema4DLoader):
     color = "orange"
     product_base_types = {"camera"}
     product_types = product_base_types
-    representations = {"abc"}
+    representations = {"*"}
+    extensions = {"abc"}
     icon = "file-video-o"
     label = "Load Camera"
     order = -11

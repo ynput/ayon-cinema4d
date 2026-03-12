@@ -10,7 +10,8 @@ class XRefLoader(plugin.Cinema4DLoader):
 
     product_base_types = {"*"}
     product_types = product_base_types
-    representations = {"c4d", "abc", "fbx"}
+    representations = {"*"}
+    extensions = {"c4d", "abc", "fbx"}
     icon = "code-fork"
     color = "orange"
     order = -8

@@ -12,7 +12,8 @@ class LoadVDBToRedshift(plugin.Cinema4DSingleObjLoader):
     icon = "cloud"
     label = "Load VDB to Redshift"
     order = -10
-    representations = {"vdb"}
+    representations = {"*"}
+    extensions = {"vdb"}
 
     # TODO: Automatically set Animation to "Frame" when loading a vdb sequence
     #  and correctly set the start frame, end frame and offsets

@@ -12,7 +12,8 @@ class RedshiftProxyLoader(plugin.Cinema4DSingleObjLoader):
     icon = "code-fork"
     label = "Load Redshift Proxy"
     order = -10
-    representations = {"rs"}
+    representations = {"*"}
+    extensions = {"rs"}
 
     # TODO: Automatically enable 'animation' on the redshift proxy with
     #  the correct frame start / frame end and offsets so it plays at the

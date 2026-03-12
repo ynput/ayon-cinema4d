@@ -12,7 +12,8 @@ class LoadVolume(plugin.Cinema4DSingleObjLoader):
     icon = "cloud"
     label = "Load VDB to Volume Loader"
     order = -10
-    representations = {"vdb"}
+    representations = {"*"}
+    extensions = {"vdb"}
 
     @property
     def _node_type_id(self) -> int:

@@ -12,7 +12,8 @@ class AlembicLoader(plugin.Cinema4DLoader):
     icon = "code-fork"
     label = "Load Alembic"
     order = -10
-    representations = {"abc"}
+    representations = {"*"}
+    extensions = {"abc"}
 
     def _load_file(self, filepath):
         """Merge a camera from a file.
