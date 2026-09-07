@@ -9,29 +9,27 @@ log = logging.getLogger(__name__)
 
 FBX_EXPORTER_ID = 1026370
 
+# Note: Cinema 4D render settings are strictly typed. Float parameters
+# (see RDATA_* docs) must be set with floats, ints with ints. The helper
+# `set_parameters` below coerces values to the stored parameter type.
 PLAYBLAST_SETTINGS = {
-    # Resolution
-    "RDATA_XRES": 1920,
-    "RDATA_YRES": 1080,
-    "RDATA_LOCKRATIO": True,
+    # Resolution (overridden by the render_playblast arguments)
+    "RDATA_XRES": 1920.0,
+    "RDATA_YRES": 1080.0,
+    "RDATA_LOCKRATIO": False,
     "RDATA_ADAPT_DATARATE": True,
-    "RDATA_PIXELRESOLUTION_VIRTUAL": 72,
+    "RDATA_PIXELRESOLUTION_VIRTUAL": 72.0,
     "RDATA_PIXELRESOLUTIONUNIT": 1,
     "RDATA_RENDERREGION": False,
-    "RDATA_FILMASPECT": 1.778,
-    "RDATA_PIXELASPECT": 1,
-    # Frame rate and range
-    # "RDATA_FRAMERATE": 12,
-    # "RDATA_FRAMESEQUENCE": c4d.RDATA_FRAMESEQUENCE_ALLFRAMES,
-    # "RDATA_FRAMEFROM": 0,
-    # "RDATA_FRAMETO": 11,
+    "RDATA_PIXELASPECT": 1.0,
+    # Frame rate and range are set in `render_playblast`
     "RDATA_FRAMESTEP": 1,
     "RDATA_FIELD": 0,
     "RDATA_GLOBALSAVE": True,
     "RDATA_SAVEIMAGE": True,
     "RDATA_MULTIPASS_ENABLE": False,
     "RDATA_PROJECTFILE": False,
-    "RDATA_FORMAT": c4d.FILTER_MOVIE,  # save as Quicktime movie,
+    "RDATA_FORMAT": c4d.FILTER_MOVIE,  # save as movie (mp4)
 }
 
 HARDWARE_SETTINGS = {
@@ -366,6 +364,25 @@ def extract_redshiftproxy(
     return filepath
 
 
+def set_parameters(container, values):
+    """Set container values, coerced to the type each parameter stores.
+
+    Cinema 4D containers are strictly typed, e.g. assigning an `int` to a
+    float parameter like `c4d.RDATA_XRES` raises a `TypeError`.
+
+    Args:
+        container (c4d.BaseContainer): Container to set the values on.
+        values (dict[int, Any]): Parameter id to value mapping.
+    """
+    for param_id, value in values.items():
+        param_type = container.GetType(param_id)
+        if param_type == c4d.DA_REAL:
+            value = float(value)
+        elif param_type in (c4d.DA_LONG, c4d.DA_LLONG):
+            value = int(value)
+        container[param_id] = value
+
+
 def render_playblast(filepath,
                      frame_start=None,
                      frame_end=None,
@@ -375,13 +392,18 @@ def render_playblast(filepath,
                      doc=None):
     """Create a playblast of the given or active document.
 
+    The active render settings are used for the render, but every parameter
+    this function overrides is restored afterwards so the artist's render
+    settings remain unchanged.
+
     Args:
         filepath(str): The filepath to render the movie to.
         frame_start (Optional[int]): Frame start.
             Defaults to document start time if not provided.
         frame_end (Optional[int]): Frame end.
             Defaults to document end time if not provided.
-        fps (int): Frames per seconds.
+        fps (Optional[float]): Frames per second.
+            Defaults to the document fps if not provided.
         width (int): Resolution width for the render.
         height (int): Resolution height for the render.
         doc (Optional[c4d.documents.BaseDocument]): Document to operate in.
@@ -401,49 +423,70 @@ def render_playblast(filepath,
     if frame_end is None:
         frame_end = doc.GetMaxTime().GetFrame(doc_fps)
 
+    width = int(width)
+    height = int(height)
+
     renderdata = doc.GetActiveRenderData().GetDataInstance()
-    previous_render_engine = renderdata[c4d.RDATA_RENDERENGINE]
-    renderdata[c4d.RDATA_RENDERENGINE] = c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE
 
-    # Set render settings
-    for attr, value in PLAYBLAST_SETTINGS.items():
-        renderdata[getattr(c4d, attr)] = value
+    settings = {
+        getattr(c4d, attr): value
+        for attr, value in PLAYBLAST_SETTINGS.items()
+    }
+    settings.update({
+        c4d.RDATA_RENDERENGINE: c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE,
+        # Frame rate and range. Frame from/to are `c4d.BaseTime` parameters.
+        c4d.RDATA_FRAMERATE: fps,
+        c4d.RDATA_FRAMESEQUENCE: c4d.RDATA_FRAMESEQUENCE_MANUAL,
+        c4d.RDATA_FRAMEFROM: c4d.BaseTime(frame_start, doc_fps),
+        c4d.RDATA_FRAMETO: c4d.BaseTime(frame_end, doc_fps),
+        # Resolution
+        c4d.RDATA_XRES: width,
+        c4d.RDATA_YRES: height,
+        c4d.RDATA_FILMASPECT: float(width) / float(height),
+        c4d.RDATA_ALPHACHANNEL: True,
+    })
 
-    # Set FPS and frame range
-    renderdata[c4d.RDATA_FRAMERATE] = fps
-    renderdata[c4d.RDATA_FRAMESEQUENCE] = c4d.RDATA_FRAMESEQUENCE_MANUAL
-    renderdata[c4d.RDATA_FRAMEFROM] = frame_start
-    renderdata[c4d.RDATA_FRAMETO] = frame_end
+    # Remember the original values so they can be restored after rendering
+    original = {
+        param_id: renderdata.GetData(param_id) for param_id in settings
+    }
+    original_path = renderdata.GetFilename(c4d.RDATA_PATH)
 
-    # Set resolution
-    renderdata[c4d.RDATA_XRES] = width
-    renderdata[c4d.RDATA_YRES] = height
-
-    renderdata[c4d.RDATA_ALPHACHANNEL] = True
-
-    # TODO: Somehow figure out how to (temporarily) overwrite a video post,
-    #    or add a new one and remove it afterwards.
-    # Set hardware video post
-    # hardware_vp = c4d.documents.BaseVideoPost(c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE)
-    # for k, v in HARDWARE_SETTINGS.items():
-    #     hardware_vp[getattr(c4d, k)] = v
-    # renderdata.InsertVideoPost(hardware_vp)
     bmp = c4d.bitmaps.BaseBitmap()
-    bmp.Init(x=width, y=height, depth=24)
-    if bmp is None:
+    if bmp.Init(x=width, y=height, depth=24) != c4d.IMAGERESULT_OK:
         raise RenderError(
             "An error occurred during rendering: could not create bitmap."
         )
 
-    renderdata.SetFilename(c4d.RDATA_PATH, filepath)
+    # TODO: Somehow figure out how to (temporarily) overwrite a video post,
+    #    or add a new one and remove it afterwards.
+    # Set hardware video post
+    # hardware_vp = c4d.documents.BaseVideoPost(c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE)  # noqa: E501
+    # for k, v in HARDWARE_SETTINGS.items():
+    #     hardware_vp[getattr(c4d, k)] = v
+    # renderdata.InsertVideoPost(hardware_vp)
 
-    # Renders the document
-    result = c4d.documents.RenderDocument(
-        doc,
-        renderdata,
-        bmp,
-        c4d.RENDERFLAGS_EXTERNAL | c4d.RENDERFLAGS_NODOCUMENTCLONE,
-    )
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+    try:
+        set_parameters(renderdata, settings)
+        renderdata.SetFilename(c4d.RDATA_PATH, filepath)
+
+        # Renders the document
+        result = c4d.documents.RenderDocument(
+            doc,
+            renderdata,
+            bmp,
+            c4d.RENDERFLAGS_EXTERNAL | c4d.RENDERFLAGS_NODOCUMENTCLONE,
+        )
+    finally:
+        # Restore the render settings we changed
+        for param_id, value in original.items():
+            if value is not None:
+                renderdata[param_id] = value
+        renderdata.SetFilename(c4d.RDATA_PATH, original_path)
+
     if result != c4d.RENDERRESULT_OK:
         raise RenderError(
             "Failed to render {filepath}. (error code: {result})".format(
@@ -451,7 +494,4 @@ def render_playblast(filepath,
             )
         )
 
-    # Switch back to previous render engine,
-    # although this doesn't seem to be needed.
-    renderdata[c4d.RDATA_RENDERENGINE] = previous_render_engine
     return filepath
