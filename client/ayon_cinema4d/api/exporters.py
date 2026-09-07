@@ -29,8 +29,13 @@ PLAYBLAST_SETTINGS = {
     "RDATA_SAVEIMAGE": True,
     "RDATA_MULTIPASS_ENABLE": False,
     "RDATA_PROJECTFILE": False,
-    "RDATA_FORMAT": c4d.FILTER_MOVIE,  # save as movie (mp4)
+    # Frames are rendered as an image sequence; the reviewable movie is
+    # created from it by ayon-core's `ExtractReview`.
+    "RDATA_FORMAT": c4d.FILTER_JPG,
+    "RDATA_NAMEFORMAT": c4d.RDATA_NAMEFORMAT_6,  # name.0000.jpg
 }
+
+PLAYBLAST_EXTENSION = "jpg"
 
 # Hardware preview (viewport render) video post settings
 HARDWARE_SETTINGS = {
@@ -508,7 +513,7 @@ def create_playblast_render_data(filepath,
         c4d.RDATA_XRES: float(width),
         c4d.RDATA_YRES: float(height),
         c4d.RDATA_FILMASPECT: float(width) / float(height),
-        c4d.RDATA_ALPHACHANNEL: True,
+        c4d.RDATA_ALPHACHANNEL: False,
     })
     container = render_data.GetDataInstance()
     set_parameters(container, settings)
@@ -580,10 +585,12 @@ def render_playblast(filepath,
 
     The playblast renders a copy of the document with its own render settings,
     so the scene, its render settings and the artist's viewport are never
-    changed.
+    changed. It renders a jpg sequence; the reviewable movie is created from
+    it by ayon-core's `ExtractReview`.
 
     Args:
-        filepath(str): The filepath to render the movie to.
+        filepath(str): Output path *without* extension. Frames are written as
+            `<filepath>.<frame>.jpg`.
         frame_start (Optional[int]): Frame start.
             Defaults to document start time if not provided.
         frame_end (Optional[int]): Frame end.
@@ -601,7 +608,7 @@ def render_playblast(filepath,
             Defaults to active document if not set.
 
     Returns:
-        str: The filepath of the rendered movie.
+        list[str]: The filenames of the rendered frames.
     """
 
     doc = doc or c4d.documents.GetActiveDocument()
@@ -658,4 +665,14 @@ def render_playblast(filepath,
             )
         )
 
-    return filepath
+    # Collect the rendered frames
+    directory, prefix = os.path.split(filepath)
+    files = sorted(
+        name for name in os.listdir(directory)
+        if name.startswith("{0}.".format(prefix))
+        and name.endswith(".{0}".format(PLAYBLAST_EXTENSION))
+    )
+    if not files:
+        raise RenderError("No frames were rendered to: {0}".format(filepath))
+
+    return files
