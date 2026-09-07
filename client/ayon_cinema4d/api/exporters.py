@@ -32,11 +32,38 @@ PLAYBLAST_SETTINGS = {
     "RDATA_FORMAT": c4d.FILTER_MOVIE,  # save as movie (mp4)
 }
 
+# Hardware preview (viewport render) video post settings
 HARDWARE_SETTINGS = {
     "VP_PREVIEWHARDWARE_ENHANCEDOPENGL": False,
     "VP_PREVIEWHARDWARE_ANTIALIASING": 2,
-    "VP_PREVIEWHARDWARE_SUPERSAMPLING": c4d.VP_PREVIEWHARDWARE_SUPERSAMPLING_NONE,
+    "VP_PREVIEWHARDWARE_SUPERSAMPLING": c4d.VP_PREVIEWHARDWARE_SUPERSAMPLING_NONE,  # noqa: E501
 }
+
+# Display filters excluded from a review render. The suffixes are shared by
+# the viewport render effect (`VP_PREVIEWHARDWARE_*`) and the view itself
+# (`BASEDRAW_*`), both of which are set on a throwaway copy of the document.
+HIDDEN_DISPLAY_FILTERS = [
+    "DISPLAYFILTER_GRID",  # Workplane
+    "DISPLAYFILTER_BASEGRID",  # World Grid
+    "DISPLAYFILTER_WORLDAXIS",  # World Axis
+    "DISPLAYFILTER_HORIZON",  # Horizon
+    "DISPLAYFILTER_HUD",  # HUD
+    "DISPLAYFILTER_CAMERA",  # Camera
+    "DISPLAYFILTER_FIELD",  # Field
+    "DISPLAYFILTER_DEFORMER",  # Deformer
+    "DISPLAYFILTER_LIGHT",  # Light
+    "DISPLAYFILTER_JOINT",  # Joint
+    "DISPLAYFILTER_GUIDELINES",  # Guides
+    "DISPLAYFILTER_OBJECTHANDLES",  # Axis
+    "DISPLAYFILTER_MULTIAXIS",  # Multi-Select Axes
+    "DISPLAYFILTER_HANDLES",  # Handles
+    "DISPLAYFILTER_SDS",  # SDS Mesh
+    "DATA_SHOWPATH",  # Animation Path
+    "DISPLAYFILTER_ONION",  # Ghosting
+]
+
+SPLINE_DISPLAY_FILTER = "DISPLAYFILTER_SPLINE"
+NULL_DISPLAY_FILTER = "DISPLAYFILTER_NULL"
 
 
 class RenderError(RuntimeError):
@@ -364,6 +391,25 @@ def extract_redshiftproxy(
     return filepath
 
 
+def resolve_parameters(values):
+    """Map c4d attribute names to their ids, skipping unknown attributes.
+
+    Args:
+        values (dict[str, Any]): Attribute name to value mapping.
+
+    Returns:
+        dict[int, Any]: Parameter id to value mapping.
+    """
+    settings = {}
+    for name, value in values.items():
+        param_id = getattr(c4d, name, None)
+        if param_id is None:
+            log.debug("Skipping unknown Cinema 4D attribute: %s", name)
+            continue
+        settings[param_id] = value
+    return settings
+
+
 def set_parameters(container, values):
     """Set container values, coerced to the type each parameter stores.
 
@@ -383,18 +429,158 @@ def set_parameters(container, values):
         container[param_id] = value
 
 
+def set_node_parameters(node, values):
+    """Set parameters on a node instead of writing its container directly.
+
+    Node assignment goes through the plug-in's parameter handling, which the
+    viewport render effect relies on - writing its raw container leaves the
+    display filters without effect.
+
+    Args:
+        node (c4d.BaseList2D): Node to set the values on.
+        values (dict[int, Any]): Parameter id to value mapping.
+    """
+    for param_id, value in values.items():
+        node[param_id] = value
+        if node[param_id] != value:
+            log.debug("Parameter %s did not apply: %s", param_id, value)
+
+
+def get_display_filters(prefix, show_splines=False, show_nulls=False):
+    """Resolve the display filter values for a review render.
+
+    Args:
+        prefix (str): Attribute prefix, `VP_PREVIEWHARDWARE_` for the viewport
+            render effect or `BASEDRAW_` for the view.
+        show_splines (bool): Include splines.
+        show_nulls (bool): Include nulls.
+
+    Returns:
+        dict[int, bool]: Parameter id to value mapping.
+    """
+    values = {prefix + name: False for name in HIDDEN_DISPLAY_FILTERS}
+    values[prefix + SPLINE_DISPLAY_FILTER] = show_splines
+    values[prefix + NULL_DISPLAY_FILTER] = show_nulls
+    return resolve_parameters(values)
+
+
+def create_playblast_render_data(filepath,
+                                 frame_start,
+                                 frame_end,
+                                 fps,
+                                 width,
+                                 height,
+                                 geometry_only=True,
+                                 show_splines=False,
+                                 show_nulls=False):
+    """Create the render settings for a playblast.
+
+    These are standalone render settings using the viewport renderer with its
+    own video post, so none of the scene's render settings are used.
+
+    Args:
+        filepath (str): The filepath to render the movie to.
+        frame_start (int): Frame start.
+        frame_end (int): Frame end.
+        fps (float): Frames per second.
+        width (int): Resolution width.
+        height (int): Resolution height.
+        geometry_only (bool): Render geometry only, excluding splines, nulls
+            and all other viewport-only elements.
+        show_splines (bool): Include splines. Requires `geometry_only` off.
+        show_nulls (bool): Include nulls. Requires `geometry_only` off.
+
+    Returns:
+        c4d.documents.RenderData: The playblast render settings.
+    """
+    render_data = c4d.documents.RenderData()
+    render_data.SetName("AYON Review")
+
+    settings = resolve_parameters(PLAYBLAST_SETTINGS)
+    settings.update({
+        c4d.RDATA_RENDERENGINE: c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE,
+        # Frame rate and range. Frame from/to are `c4d.BaseTime` parameters.
+        c4d.RDATA_FRAMERATE: float(fps),
+        c4d.RDATA_FRAMESEQUENCE: c4d.RDATA_FRAMESEQUENCE_MANUAL,
+        c4d.RDATA_FRAMEFROM: c4d.BaseTime(frame_start, fps),
+        c4d.RDATA_FRAMETO: c4d.BaseTime(frame_end, fps),
+        # Resolution
+        c4d.RDATA_XRES: float(width),
+        c4d.RDATA_YRES: float(height),
+        c4d.RDATA_FILMASPECT: float(width) / float(height),
+        c4d.RDATA_ALPHACHANNEL: True,
+    })
+    container = render_data.GetDataInstance()
+    set_parameters(container, settings)
+    container.SetFilename(c4d.RDATA_PATH, filepath)
+
+    # The viewport render effect defines what of the scene is rendered. It
+    # must be inserted before its parameters are set.
+    video_post = c4d.documents.BaseVideoPost(
+        c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE
+    )
+    render_data.InsertVideoPostLast(video_post)
+
+    vp_settings = resolve_parameters(HARDWARE_SETTINGS)
+    vp_settings.update(get_display_filters("VP_PREVIEWHARDWARE_",
+                                           show_splines=show_splines,
+                                           show_nulls=show_nulls))
+    vp_settings[c4d.VP_PREVIEWHARDWARE_ONLY_GEOMETRY] = geometry_only
+    set_node_parameters(video_post, vp_settings)
+
+    return render_data
+
+
+def create_playblast_document(doc, show_splines=False, show_nulls=False):
+    """Copy the document to render the playblast from.
+
+    The viewport renderer mirrors the view it renders from, so the filters
+    have to be set on the document's view as well. Rendering a copy keeps the
+    artist's document, render settings and viewport untouched.
+
+    Args:
+        doc (c4d.documents.BaseDocument): Document to copy.
+        show_splines (bool): Include splines.
+        show_nulls (bool): Include nulls.
+
+    Returns:
+        c4d.documents.BaseDocument: The document copy to render.
+    """
+    render_doc = doc.GetClone(c4d.COPYFLAGS_DOCUMENT)
+
+    # Keep the document location so relative asset paths keep resolving
+    render_doc.SetDocumentPath(doc.GetDocumentPath())
+    render_doc.SetDocumentName(doc.GetDocumentName())
+
+    filters = get_display_filters("BASEDRAW_",
+                                  show_splines=show_splines,
+                                  show_nulls=show_nulls)
+    base_draw_count = render_doc.GetBaseDrawCount()
+    if not base_draw_count:
+        log.debug("Document copy has no view to set display filters on.")
+    for index in range(base_draw_count):
+        base_draw = render_doc.GetBaseDraw(index)
+        if base_draw is not None:
+            set_node_parameters(base_draw, filters)
+
+    return render_doc
+
+
 def render_playblast(filepath,
                      frame_start=None,
                      frame_end=None,
                      fps=None,
                      width=1920,
                      height=1080,
+                     geometry_only=True,
+                     show_splines=False,
+                     show_nulls=False,
                      doc=None):
     """Create a playblast of the given or active document.
 
-    The active render settings are used for the render, but every parameter
-    this function overrides is restored afterwards so the artist's render
-    settings remain unchanged.
+    The playblast renders a copy of the document with its own render settings,
+    so the scene, its render settings and the artist's viewport are never
+    changed.
 
     Args:
         filepath(str): The filepath to render the movie to.
@@ -406,6 +592,11 @@ def render_playblast(filepath,
             Defaults to the document fps if not provided.
         width (int): Resolution width for the render.
         height (int): Resolution height for the render.
+        geometry_only (bool): Render geometry only. Disable to include
+            splines and/or nulls; all other viewport-only elements stay
+            excluded either way.
+        show_splines (bool): Include splines. Requires `geometry_only` off.
+        show_nulls (bool): Include nulls. Requires `geometry_only` off.
         doc (Optional[c4d.documents.BaseDocument]): Document to operate in.
             Defaults to active document if not set.
 
@@ -413,7 +604,6 @@ def render_playblast(filepath,
         str: The filepath of the rendered movie.
     """
 
-    # Retrieves the current active render settings
     doc = doc or c4d.documents.GetActiveDocument()
     doc_fps = doc.GetFps()
     if fps is None:
@@ -426,31 +616,24 @@ def render_playblast(filepath,
     width = int(width)
     height = int(height)
 
-    renderdata = doc.GetActiveRenderData().GetDataInstance()
+    render_data = create_playblast_render_data(
+        filepath,
+        frame_start=frame_start,
+        frame_end=frame_end,
+        fps=fps,
+        width=width,
+        height=height,
+        geometry_only=geometry_only,
+        show_splines=show_splines,
+        show_nulls=show_nulls,
+    )
 
-    settings = {
-        getattr(c4d, attr): value
-        for attr, value in PLAYBLAST_SETTINGS.items()
-    }
-    settings.update({
-        c4d.RDATA_RENDERENGINE: c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE,
-        # Frame rate and range. Frame from/to are `c4d.BaseTime` parameters.
-        c4d.RDATA_FRAMERATE: fps,
-        c4d.RDATA_FRAMESEQUENCE: c4d.RDATA_FRAMESEQUENCE_MANUAL,
-        c4d.RDATA_FRAMEFROM: c4d.BaseTime(frame_start, doc_fps),
-        c4d.RDATA_FRAMETO: c4d.BaseTime(frame_end, doc_fps),
-        # Resolution
-        c4d.RDATA_XRES: width,
-        c4d.RDATA_YRES: height,
-        c4d.RDATA_FILMASPECT: float(width) / float(height),
-        c4d.RDATA_ALPHACHANNEL: True,
-    })
-
-    # Remember the original values so they can be restored after rendering
-    original = {
-        param_id: renderdata.GetData(param_id) for param_id in settings
-    }
-    original_path = renderdata.GetFilename(c4d.RDATA_PATH)
+    render_doc = create_playblast_document(doc,
+                                           show_splines=show_splines,
+                                           show_nulls=show_nulls)
+    render_doc.InsertRenderData(render_data)
+    # The viewport renderer reads its settings from the active render data
+    render_doc.SetActiveRenderData(render_data)
 
     bmp = c4d.bitmaps.BaseBitmap()
     if bmp.Init(x=width, y=height, depth=24) != c4d.IMAGERESULT_OK:
@@ -458,35 +641,16 @@ def render_playblast(filepath,
             "An error occurred during rendering: could not create bitmap."
         )
 
-    # TODO: Somehow figure out how to (temporarily) overwrite a video post,
-    #    or add a new one and remove it afterwards.
-    # Set hardware video post
-    # hardware_vp = c4d.documents.BaseVideoPost(c4d.RDATA_RENDERENGINE_PREVIEWHARDWARE)  # noqa: E501
-    # for k, v in HARDWARE_SETTINGS.items():
-    #     hardware_vp[getattr(c4d, k)] = v
-    # renderdata.InsertVideoPost(hardware_vp)
-
     # Ensure output directory exists
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
-    try:
-        set_parameters(renderdata, settings)
-        renderdata.SetFilename(c4d.RDATA_PATH, filepath)
-
-        # Renders the document
-        result = c4d.documents.RenderDocument(
-            doc,
-            renderdata,
-            bmp,
-            c4d.RENDERFLAGS_EXTERNAL | c4d.RENDERFLAGS_NODOCUMENTCLONE,
-        )
-    finally:
-        # Restore the render settings we changed
-        for param_id, value in original.items():
-            if value is not None:
-                renderdata[param_id] = value
-        renderdata.SetFilename(c4d.RDATA_PATH, original_path)
-
+    result = c4d.documents.RenderDocument(
+        render_doc,
+        # `GetData()` is deprecated since 2024.0
+        render_data.GetDataInstance(),
+        bmp,
+        c4d.RENDERFLAGS_EXTERNAL | c4d.RENDERFLAGS_NODOCUMENTCLONE,
+    )
     if result != c4d.RENDERRESULT_OK:
         raise RenderError(
             "Failed to render {filepath}. (error code: {result})".format(

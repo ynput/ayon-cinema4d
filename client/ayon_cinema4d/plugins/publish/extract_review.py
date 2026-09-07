@@ -27,6 +27,14 @@ class Cinema4DExtractReview(publish.Extractor):
                                    attrib.get("resolutionHeight", 1080))
         fps = instance.data.get("fps", attrib.get("fps"))
 
+        # Viewport content. Splines and nulls can only render with
+        # 'Geometry Only' disabled, so enabling either implies it.
+        show_splines = instance.data.get("showSplines", False)
+        show_nulls = instance.data.get("showNulls", False)
+        geometry_only = instance.data.get("geometryOnly", True)
+        if show_splines or show_nulls:
+            geometry_only = False
+
         # TODO: Allow using members for isolate view
         # nodes = instance[:]
         # Define extract output file path
@@ -42,6 +50,9 @@ class Cinema4DExtractReview(publish.Extractor):
             fps=fps,
             width=width,
             height=height,
+            geometry_only=geometry_only,
+            show_splines=show_splines,
+            show_nulls=show_nulls,
             doc=doc
         )
 
