@@ -19,6 +19,14 @@ class Cinema4DExtractReview(publish.Extractor):
         start = instance.data["frameStartHandle"]
         end = instance.data["frameEndHandle"]
 
+        # Resolution and fps from the instance, falling back to the folder
+        attrib = instance.data.get("folderEntity", {}).get("attrib", {})
+        width = instance.data.get("resolutionWidth",
+                                  attrib.get("resolutionWidth", 1920))
+        height = instance.data.get("resolutionHeight",
+                                   attrib.get("resolutionHeight", 1080))
+        fps = instance.data.get("fps", attrib.get("fps"))
+
         # TODO: Allow using members for isolate view
         # nodes = instance[:]
         # Define extract output file path
@@ -31,6 +39,9 @@ class Cinema4DExtractReview(publish.Extractor):
             path,
             frame_start=start,
             frame_end=end,
+            fps=fps,
+            width=width,
+            height=height,
             doc=doc
         )
 
@@ -39,6 +50,10 @@ class Cinema4DExtractReview(publish.Extractor):
             "ext": "mp4",
             "files": filename,
             "stagingDir": dir_path,
+            "frameStart": start,
+            "frameEnd": end,
+            "fps": fps,
+            "tags": ["review"],
         }
         instance.data.setdefault("representations", []).append(representation)
 

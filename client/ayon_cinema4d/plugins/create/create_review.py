@@ -15,5 +15,6 @@ class CreateReview(plugin.Cinema4DCreator):
     icon = "video-camera"
 
     def get_instance_attr_defs(self):
-        defs = lib.collect_animation_defs(self.create_context)
+        # `fps` is required by ayon-core ExtractReview
+        defs = lib.collect_animation_defs(self.create_context, fps=True)
         return defs
