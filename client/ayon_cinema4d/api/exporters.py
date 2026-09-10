@@ -62,9 +62,19 @@ HIDDEN_DISPLAY_FILTERS = [
     "DISPLAYFILTER_OBJECTHANDLES",  # Axis
     "DISPLAYFILTER_MULTIAXIS",  # Multi-Select Axes
     "DISPLAYFILTER_HANDLES",  # Handles
-    "DISPLAYFILTER_SDS",  # SDS Mesh
+    "DISPLAYFILTER_SDSCAGE",  # SDS Cage
     "DATA_SHOWPATH",  # Animation Path
     "DISPLAYFILTER_ONION",  # Ghosting
+]
+
+# Geometry display filters, always shown even when the copied view hides
+# them. 'SDS Mesh' is the smoothed Subdivision Surface result; without it
+# only the unsubdivided cage renders.
+GEOMETRY_DISPLAY_FILTERS = [
+    "DISPLAYFILTER_POLYGON",  # Polygon
+    "DISPLAYFILTER_GENERATOR",  # Generator
+    "DISPLAYFILTER_HYPERNURBS",  # Subdivision Surface
+    "DISPLAYFILTER_SDS",  # SDS Mesh
 ]
 
 SPLINE_DISPLAY_FILTER = "DISPLAYFILTER_SPLINE"
@@ -464,6 +474,7 @@ def get_display_filters(prefix, show_splines=False, show_nulls=False):
         dict[int, bool]: Parameter id to value mapping.
     """
     values = {prefix + name: False for name in HIDDEN_DISPLAY_FILTERS}
+    values.update({prefix + name: True for name in GEOMETRY_DISPLAY_FILTERS})
     values[prefix + SPLINE_DISPLAY_FILTER] = show_splines
     values[prefix + NULL_DISPLAY_FILTER] = show_nulls
     return resolve_parameters(values)
