@@ -59,8 +59,10 @@ class Cinema4DExtractReview(publish.Extractor):
             doc=doc
         )
 
-        # Middle frame as the version thumbnail
-        instance.data["thumbnailSource"] = os.path.join(
+        # Middle frame as the version thumbnail. `thumbnailPath` is uploaded
+        # by core `IntegrateThumbnailsAYON`; `thumbnailSource` would be too
+        # late, `ExtractThumbnailFromSource` runs before this extractor.
+        instance.data["thumbnailPath"] = os.path.join(
             dir_path, files[len(files) // 2]
         )
 

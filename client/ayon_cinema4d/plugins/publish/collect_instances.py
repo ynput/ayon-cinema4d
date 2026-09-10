@@ -55,7 +55,7 @@ class CollectInstances(pyblish.api.InstancePlugin):
                 instance.data["frameStart"] - instance.data["handleStart"]
             )
             frame_end_handle = (
-                instance.data["frameEnd"] - instance.data["handleEnd"]
+                instance.data["frameEnd"] + instance.data["handleEnd"]
             )
             instance.data["frameStartHandle"] = frame_start_handle
             instance.data["frameEndHandle"] = frame_end_handle
