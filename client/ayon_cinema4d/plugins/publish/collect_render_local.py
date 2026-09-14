@@ -7,7 +7,9 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     _get_legacy_product_name_and_group,
 )
 from ayon_core.pipeline.publish import ColormanagedPyblishPluginMixin
-from ayon_cinema4d.api import plugin
+from ayon_cinema4d.api import lib_renderproducts, plugin
+
+MULTIPASS_NAME = "multipass"
 
 
 class CollectRenderLocal(pyblish.api.InstancePlugin,
@@ -15,7 +17,9 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
     """Collect one instance per AOV for local renders and existing frames.
 
     Product names and representations match the farm publish of the same
-    render. The frames are rendered by `ExtractRenderLocal`.
+    render: the Multi-Layer file is a `multipass` representation of the
+    render product and the frames are tagged for review. The frames are
+    rendered by `ExtractRenderLocal`.
     """
 
     label = "Collect Local Render AOVs"
@@ -29,46 +33,83 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
             self.log.debug("Render on farm, skipping local AOV instances.")
             return
 
-        expected_files = next(iter(instance.data.get("expectedFiles", [])),
-                              {})
+        expected_files = dict(
+            next(iter(instance.data.get("expectedFiles", [])), {})
+        )
         colorspaces = {
             product.productName: product.colorspace
             for product in instance.data["renderProducts"].layer_data.products
         }
+        # Published as representation of the render product, not on its own
+        multipass_files = None
+        if "" in expected_files:
+            multipass_files = expected_files.pop(MULTIPASS_NAME, None)
+        review = lib_renderproducts.get_render_settings(
+            instance.context.data["project_settings"]
+        )["review"]
+
         for aov_name, files in expected_files.items():
             aov_instance = self.create_aov_instance(
                 instance, aov_name, files, colorspaces.get(aov_name)
             )
+            if not aov_name:
+                if review:
+                    self.add_review(aov_instance)
+                if multipass_files:
+                    aov_instance.data["representations"].append(
+                        self.create_representation(
+                            instance,
+                            multipass_files,
+                            colorspaces.get(MULTIPASS_NAME),
+                            name=MULTIPASS_NAME,
+                        )
+                    )
             self.log.debug(f"Collected AOV '{aov_name}': {aov_instance}")
 
         # The AOV instances publish the frames, they may share the product
         # name of the render instance (regular image without AOV name)
         instance.data["integrate"] = False
 
-    def create_aov_instance(self, instance, aov_name, files, colorspace):
-        context = instance.context
-        product_name, product_group = self.get_product_name_and_group(
-            instance, aov_name
-        )
+    def add_review(self, aov_instance):
+        """Tag the rendered frames for review."""
+        aov_instance.data["representations"][0]["tags"].append("review")
+        aov_instance.data["families"].append("review")
+        aov_instance.data["review"] = True
+
+    def create_representation(self, instance, files, colorspace, name=None):
+        """Return the representation of a rendered sequence."""
         filenames = [os.path.basename(path) for path in files]
-        staging_dir = os.path.dirname(files[0])
         ext = os.path.splitext(filenames[0])[1].lstrip(".")
 
         representation = {
-            "name": ext,
+            "name": name or ext,
             "ext": ext,
             # A single frame must not be published as a sequence
             "files": filenames if len(filenames) > 1 else filenames[0],
-            "stagingDir": staging_dir,
+            "stagingDir": os.path.dirname(files[0]),
             "frameStart": instance.data["frameStartHandle"],
             "frameEnd": instance.data["frameEndHandle"],
             "fps": instance.data["fps"],
             "tags": [],
         }
+        if name:
+            # Keeps the published files apart from the rendered frames
+            representation["outputName"] = name
         if colorspace:
             self.set_representation_colorspace(
-                representation, context, colorspace=colorspace
+                representation, instance.context, colorspace=colorspace
             )
+        return representation
+
+    def create_aov_instance(self, instance, aov_name, files, colorspace):
+        context = instance.context
+        product_name, product_group = self.get_product_name_and_group(
+            instance, aov_name
+        )
+        representation = self.create_representation(
+            instance, files, colorspace
+        )
+        staging_dir = representation["stagingDir"]
 
         aov_instance = context.create_instance(product_name)
         aov_instance.data.update({
@@ -79,7 +120,7 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
                 "handleEnd", "frameStartHandle", "frameEndHandle", "fps",
                 "resolutionWidth", "resolutionHeight", "pixelAspect",
                 "source", "publish_attributes", "version",
-                "hasExplicitFrames",
+                "hasExplicitFrames", "folderEntity", "taskEntity",
             )
             if key in instance.data
         })

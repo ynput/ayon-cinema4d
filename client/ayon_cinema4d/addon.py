@@ -1,15 +1,28 @@
 import os
-from ayon_core.addon import AYONAddon, IHostAddon
+from ayon_core.addon import AYONAddon, IHostAddon, IPluginPaths
 
 from .version import __version__
 
 CINEMA4D_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
-class Cinema4DAddon(AYONAddon, IHostAddon):
+class Cinema4DAddon(AYONAddon, IHostAddon, IPluginPaths):
     name = "cinema4d"
     version = __version__
     host_name = "cinema4d"
+
+    def get_publish_plugin_paths(self, host_name):
+        """Publish plugins that run without Cinema 4D.
+
+        Registered in the Cinema 4D session and in the Deadline publish job,
+        which runs `AYON_HOST_NAME` = cinema4d without the application. The
+        plugins must not import `c4d` or `ayon_cinema4d.api`.
+        """
+        if host_name != self.host_name:
+            return []
+        return [
+            os.path.join(CINEMA4D_ADDON_ROOT, "plugins", "publish_shared")
+        ]
 
     def get_launch_hook_paths(self, app):
         if app.host_name != self.host_name:

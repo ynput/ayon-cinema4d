@@ -32,6 +32,38 @@ class RenderSettingsModel(BaseSettingsModel):
         title="Multi-Layer file prefix",
         description="One file with all passes, without $pass.",
     )
+    review: bool = SettingsField(
+        True,
+        title="Review the rendered sequence",
+        description="Create a movie from the rendered frames in AYON.",
+    )
+    jpeg_sequence: bool = SettingsField(
+        True,
+        title="Publish a JPEG sequence",
+        description="Converted from the rendered frames, display referred.",
+    )
+    contact_sheet: bool = SettingsField(
+        True,
+        title="Publish a Multi-Pass contact sheet",
+        description=(
+            "One labelled grid of all passes per frame, needs a Multi-Layer"
+            " file. Published as JPEG sequence with a movie."
+        ),
+    )
+    contact_sheet_columns: int = SettingsField(
+        0,
+        title="Contact sheet columns",
+        ge=0,
+        le=16,
+        description="0 fits the grid to the number of passes.",
+    )
+    contact_sheet_tile_width: int = SettingsField(
+        640,
+        title="Contact sheet tile width",
+        ge=64,
+        le=4096,
+        description="Width of a single pass in the contact sheet.",
+    )
 
 
 class Cinema4DSettings(BaseSettingsModel):

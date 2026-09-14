@@ -23,6 +23,9 @@ DEFAULT_RENDER_SETTINGS = {
     "image_prefix": "$prj/$take/$take",
     "multipass_prefix": "$prj/$take/$pass/$take_$pass",
     "multilayer_prefix": "$prj/$take/$take_multipass",
+    # The JPEG sequence and contact sheet are created by the publish plugins
+    # in `plugins/publish_shared`, which keep their own defaults
+    "review": True,
 }
 # Name.0000.ext, frame numbers after a dot are required by the publish
 RENDER_NAME_FORMAT = c4d.RDATA_NAMEFORMAT_6
@@ -504,6 +507,16 @@ def get_scene_ocio_config(
     }
 
 
+def get_render_settings(project_settings=None):
+    """Return `cinema4d/render_settings` with the defaults filled in."""
+    settings = dict(DEFAULT_RENDER_SETTINGS)
+    settings.update(
+        (project_settings or {}).get("cinema4d", {}).get("render_settings")
+        or {}
+    )
+    return settings
+
+
 def get_render_output_paths(doc, render_data, project_settings=None):
     """Return the pipeline output paths for render settings.
 
@@ -521,11 +534,7 @@ def get_render_output_paths(doc, render_data, project_settings=None):
         dict[int, str]: Output path by parameter id (`RDATA_PATH`,
             `RDATA_MULTIPASS_FILENAME`).
     """
-    settings = dict(DEFAULT_RENDER_SETTINGS)
-    settings.update(
-        (project_settings or {}).get("cinema4d", {}).get("render_settings")
-        or {}
-    )
+    settings = get_render_settings(project_settings)
     folder = os.path.join(doc.GetDocumentPath(), settings["render_folder"])
     multipass_prefix = settings["multipass_prefix"]
     if render_data[c4d.RDATA_MULTIPASS_SAVEONEFILE]:

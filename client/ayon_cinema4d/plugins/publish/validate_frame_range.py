@@ -34,6 +34,11 @@ class ValidateFrameRange(
         if not self.is_active(instance.data):
             return
 
+        # Reviewed render products render the range of their own product,
+        # `ValidateRenderSettings` checks the render settings against it
+        if instance.data.get("productBaseType") == "render":
+            return
+
         # Get range from instance's context
         entity = instance.data.get("taskEntity", instance.data["folderEntity"])
         attrib: dict = entity["attrib"]
