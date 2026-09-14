@@ -136,7 +136,8 @@ def set_selection(doc, nodes):
     it = iter(nodes)
     doc.SetSelection(next(it), c4d.SELECTION_NEW)
     for node in it:
-        doc.SetSelection(node, c4d.SELECTION_NEW)
+        # SELECTION_NEW would clear the nodes selected before
+        doc.SetSelection(node, c4d.SELECTION_ADD)
 
 
 @contextlib.contextmanager

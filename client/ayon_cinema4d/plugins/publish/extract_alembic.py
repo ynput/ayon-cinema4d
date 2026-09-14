@@ -24,7 +24,7 @@ class ExtractAlembic(publish.Extractor):
         start = instance.data["frameStartHandle"]
         end = instance.data["frameEndHandle"]
         step = instance.data.get("step", 1)
-        bake_to_worldspace = instance.data("bakeToWorldSpace", True)
+        bake_to_worldspace = instance.data.get("bakeToWorldSpace", True)
 
         nodes = instance[:]
         # Define extract output file path
@@ -33,6 +33,10 @@ class ExtractAlembic(publish.Extractor):
         path = os.path.join(dir_path, filename)
 
         export_nodes = self.filter_objects(nodes)
+        if not bake_to_worldspace:
+            # Local transforms are relative to the parents, so those must
+            # be exported too - `filter_objects` may have dropped them.
+            export_nodes = self.with_parents(export_nodes)
         if not export_nodes:
             raise publish.KnownPublishError(
                 f"No valid objects found to export in members: {nodes}"
@@ -67,6 +71,16 @@ class ExtractAlembic(publish.Extractor):
 
     def filter_objects(self, nodes):
         return nodes
+
+    def with_parents(self, nodes):
+        """Return the nodes plus all their ancestors."""
+        result = set(nodes)
+        for node in nodes:
+            parent = node.GetUp()
+            while parent:
+                result.add(parent)
+                parent = parent.GetUp()
+        return list(result)
 
 
 class ExtractCameraAlembic(ExtractAlembic):
