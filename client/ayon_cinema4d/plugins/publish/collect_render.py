@@ -286,11 +286,13 @@ class CollectCinema4DRender(
         # Multi-Pass image. Passes written into their own file (Cryptomatte)
         # belong to this render, they become representations of its product.
         merged_aovs: list[str] = []
+        separate_aovs: list[str] = []
         save_multipass_image: bool = render_data[c4d.RDATA_MULTIPASS_SAVEIMAGE]
         if save_multipass_image:
             multipass, separate = self._collect_multipass(
                 render_data, files_resolver
             )
+            separate_aovs.extend(separate)
             merged_aovs.extend(separate)
             # Multi-layer file next to the regular image is its own product
             if "" in products and "" in multipass:
@@ -298,6 +300,9 @@ class CollectCinema4DRender(
                 merged_aovs.append("multipass")
             products.update(multipass)
         instance.data["mergedAovs"] = merged_aovs
+        # Whether the renderer writes these is up to the renderer, they are
+        # dropped when they are missing (`CollectOptionalRenderOutputs`)
+        instance.data["separateAovs"] = separate_aovs
 
         # Set output dir from the beauty output because it is required for
         # publish metadata to be written out and the publish job submission

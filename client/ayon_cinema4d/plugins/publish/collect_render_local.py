@@ -57,15 +57,17 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
             if not aov_name:
                 if review:
                     self.add_review(aov_instance)
+                optional = instance.data.get("separateAovs") or []
                 for name, merged_files in merged.items():
-                    aov_instance.data["representations"].append(
-                        self.create_representation(
-                            instance,
-                            merged_files,
-                            colorspaces.get(name),
-                            name=name,
-                        )
+                    representation = self.create_representation(
+                        instance,
+                        merged_files,
+                        colorspaces.get(name),
+                        name=name,
                     )
+                    if name in optional:
+                        representation["optionalOutput"] = True
+                    aov_instance.data["representations"].append(representation)
             self.log.debug(f"Collected AOV '{aov_name}': {aov_instance}")
 
         # The AOV instances publish the frames, they may share the product

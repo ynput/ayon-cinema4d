@@ -56,7 +56,10 @@ class SubmitRenderProducts(pyblish.api.InstancePlugin):
         )
         changed = self.add_review(product) if settings["review"] else False
         merged = instance.data.get("mergedAovs") or [MULTIPASS_NAME]
-        changed = self.merge_aovs(instances, product, merged) or changed
+        optional = instance.data.get("separateAovs") or []
+        changed = self.merge_aovs(instances, product, merged, optional) or (
+            changed
+        )
         if not changed:
             return
 
@@ -81,7 +84,7 @@ class SubmitRenderProducts(pyblish.api.InstancePlugin):
         self.log.debug(f"Review enabled for: {product['productName']}")
         return True
 
-    def merge_aovs(self, instances, product, merged_aovs):
+    def merge_aovs(self, instances, product, merged_aovs, optional_aovs=()):
         """Move the AOVs that belong to the render into its product.
 
         The Multi-Layer file and the passes Redshift writes separately
@@ -99,6 +102,8 @@ class SubmitRenderProducts(pyblish.api.InstancePlugin):
                 name = aov if not index else f"{aov}{index + 1}"
                 repre["name"] = name
                 repre["outputName"] = name
+                if aov in optional_aovs:
+                    repre["optionalOutput"] = True
                 # The render product is the reviewed one
                 repre["tags"] = [
                     tag for tag in repre.get("tags") or [] if tag != "review"
