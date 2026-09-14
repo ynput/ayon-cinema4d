@@ -141,7 +141,12 @@ class Library(c4d.plugins.CommandData):
     icon = get_icon_bitmap_by_name("folder-favorite")
 
     def Execute(self, doc):
-        host_tools.show_library_loader(
+        # ayon-core >= 1.9.8 dropped the module level `show_library_loader`.
+        # The library loader is now the regular Loader, which lists library
+        # projects in its project dropdown. `show_tool_by_name` still routes
+        # "libraryloader" there, and only logs a warning if it ever goes away.
+        host_tools.show_tool_by_name(
+            "libraryloader",
             parent=get_main_window()
         )
         return True
