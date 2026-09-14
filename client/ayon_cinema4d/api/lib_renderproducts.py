@@ -156,6 +156,17 @@ def resolve_filepath(
     return resolved
 
 
+def strip_frame_suffix(path: str) -> str:
+    """Return a rendered filepath without its frame number and extension.
+
+    Renderers report an effective path for the current frame, e.g.
+    `name_AOV_Cryptomatte.1314.exr` or `name0100.tif`. `apply_name_format`
+    adds the frame number and extension back for every frame.
+    """
+    head, _ = os.path.splitext(path)
+    return re.sub(r"[._]?\d+$", "", head)
+
+
 def apply_name_format(
     path: str,
     name_format: int,

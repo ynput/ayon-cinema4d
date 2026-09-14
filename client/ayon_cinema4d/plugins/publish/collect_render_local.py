@@ -9,17 +9,16 @@ from ayon_core.pipeline.farm.pyblish_functions import (
 from ayon_core.pipeline.publish import ColormanagedPyblishPluginMixin
 from ayon_cinema4d.api import lib_renderproducts, plugin
 
-MULTIPASS_NAME = "multipass"
-
 
 class CollectRenderLocal(pyblish.api.InstancePlugin,
                          ColormanagedPyblishPluginMixin):
     """Collect one instance per AOV for local renders and existing frames.
 
     Product names and representations match the farm publish of the same
-    render: the Multi-Layer file is a `multipass` representation of the
-    render product and the frames are tagged for review. The frames are
-    rendered by `ExtractRenderLocal`.
+    render: the AOVs in `mergedAovs` (the Multi-Layer file, the passes
+    written separately) are representations of the render product and the
+    frames are tagged for review. The frames are rendered by
+    `ExtractRenderLocal`.
     """
 
     label = "Collect Local Render AOVs"
@@ -40,10 +39,13 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
             product.productName: product.colorspace
             for product in instance.data["renderProducts"].layer_data.products
         }
-        # Published as representation of the render product, not on its own
-        multipass_files = None
+        # The Multi-Layer file and the separately written passes belong to the
+        # render product, they are published as its representations
+        merged = {}
         if "" in expected_files:
-            multipass_files = expected_files.pop(MULTIPASS_NAME, None)
+            for aov_name in instance.data.get("mergedAovs") or []:
+                if aov_name in expected_files:
+                    merged[aov_name] = expected_files.pop(aov_name)
         review = lib_renderproducts.get_render_settings(
             instance.context.data["project_settings"]
         )["review"]
@@ -55,13 +57,13 @@ class CollectRenderLocal(pyblish.api.InstancePlugin,
             if not aov_name:
                 if review:
                     self.add_review(aov_instance)
-                if multipass_files:
+                for name, merged_files in merged.items():
                     aov_instance.data["representations"].append(
                         self.create_representation(
                             instance,
-                            multipass_files,
-                            colorspaces.get(MULTIPASS_NAME),
-                            name=MULTIPASS_NAME,
+                            merged_files,
+                            colorspaces.get(name),
+                            name=name,
                         )
                     )
             self.log.debug(f"Collected AOV '{aov_name}': {aov_instance}")

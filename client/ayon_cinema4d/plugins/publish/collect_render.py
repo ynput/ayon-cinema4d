@@ -1,6 +1,7 @@
 from __future__ import annotations
 import attr
 import os
+import re
 import pyblish.api
 from typing import Optional
 
@@ -282,14 +283,21 @@ class CollectCinema4DRender(
                 file_format=render_data[c4d.RDATA_FORMAT]
             )
 
-        # Multi-Pass image
+        # Multi-Pass image. Passes written into their own file (Cryptomatte)
+        # belong to this render, they become representations of its product.
+        merged_aovs: list[str] = []
         save_multipass_image: bool = render_data[c4d.RDATA_MULTIPASS_SAVEIMAGE]
         if save_multipass_image:
-            multipass = self._collect_multipass(render_data, files_resolver)
+            multipass, separate = self._collect_multipass(
+                render_data, files_resolver
+            )
+            merged_aovs.extend(separate)
             # Multi-layer file next to the regular image is its own product
             if "" in products and "" in multipass:
                 multipass["multipass"] = multipass.pop("")
+                merged_aovs.append("multipass")
             products.update(multipass)
+        instance.data["mergedAovs"] = merged_aovs
 
         # Set output dir from the beauty output because it is required for
         # publish metadata to be written out and the publish job submission
@@ -335,7 +343,13 @@ class CollectCinema4DRender(
         self,
         render_data,
         files_resolver
-    ) -> dict[str, list[str]]:
+    ) -> tuple[dict[str, list[str]], list[str]]:
+        """Return the Multi-Pass outputs and the AOVs written separately.
+
+        Returns:
+            tuple: The files by AOV name and the AOV names that belong to
+                the render product instead of being their own product.
+        """
         multipass_token_path: str = render_data[c4d.RDATA_MULTIPASS_FILENAME]
         self.log.debug(
             f"Collected Multi-Pass Filepath: {multipass_token_path}"
@@ -349,13 +363,7 @@ class CollectCinema4DRender(
         multipass_enabled: bool = bool(render_data[c4d.RDATA_MULTIPASS_ENABLE])
         multilayer_file: bool = render_data[c4d.RDATA_MULTIPASS_SAVEONEFILE]
 
-        if multipass_enabled and multilayer_file:
-            # TODO: Check if Cryptomatte is still forced to be written out
-            #   in this scenario as a separate file.
-            # Single file
-            return {"": files_resolver(multipass_token_path)}
-
-        # Support Redshift AOVs
+        redshift_vp = None
         renderer: int = render_data[c4d.RDATA_RENDERENGINE]
         if renderer == redshift.VPrsrenderer:
             self.log.debug("Renderer is Redshift.")
@@ -363,14 +371,71 @@ class CollectCinema4DRender(
                 render_data,
                 lib_renderproducts.REDSHIFT_RENDER_ENGINE_ID
             )
-            if redshift_vp:
-                return self._collect_redshift_aovs(
-                    redshift_vp,
-                    files_resolver_fn=files_resolver,
-                    multipass_token_path=multipass_token_path
-                )
 
-        return {}
+        if multipass_enabled and multilayer_file:
+            # Single file, plus the AOVs Redshift can't merge into it
+            products = {"": files_resolver(multipass_token_path)}
+            separate = {}
+            if redshift_vp:
+                separate = self._collect_redshift_direct_aovs(
+                    redshift_vp, files_resolver
+                )
+            products.update(separate)
+            return products, list(separate)
+
+        if redshift_vp:
+            return self._collect_redshift_aovs(
+                redshift_vp,
+                files_resolver_fn=files_resolver,
+                multipass_token_path=multipass_token_path
+            ), []
+
+        return {}, []
+
+    def _collect_redshift_direct_aovs(
+        self,
+        redshift_vp: c4d.documents.BaseVideoPost,
+        files_resolver_fn
+    ) -> dict[str, list[str]]:
+        """Collect the AOVs Redshift writes into their own file.
+
+        Cryptomatte can't be stored in the merged Multi-Layer file, Redshift
+        enables its Direct Output and names the file itself, so the effective
+        path is the source of truth for any name the artist picked.
+        """
+        products: dict[str, list[str]] = {}
+        for aov in lib_renderproducts.iter_redshift_aovs(redshift_vp):
+            if not aov.enabled or not aov.direct_enabled:
+                continue
+
+            path = aov.file_effective_path
+            if not path:
+                self.log.warning(
+                    f"AOV '{aov.effective_name}' has Direct Output enabled"
+                    " but no effective path, skipping it."
+                )
+                continue
+
+            name = aov.name or aov.effective_name
+            key = self._get_aov_key(name, products)
+            products[key] = files_resolver_fn(
+                lib_renderproducts.strip_frame_suffix(path)
+            )
+            self.log.debug(
+                f"Collected separate AOV '{key}' from: {path}"
+            )
+        return products
+
+    @staticmethod
+    def _get_aov_key(name: str, products: dict) -> str:
+        """Return a unique representation name for an AOV."""
+        key = re.sub(r"[^a-zA-Z0-9]", "", name).lower() or "aov"
+        if key not in products:
+            return key
+        index = 2
+        while f"{key}{index}" in products:
+            index += 1
+        return f"{key}{index}"
 
     def _collect_redshift_aovs(
         self,
@@ -407,9 +472,11 @@ class CollectCinema4DRender(
                 # TODO: File effective path does not work with e.g. Light
                 #  Groups because it will always return the direct AOV path
                 #  from C4D instead of our 'copied' aovs
-                filepath = os.path.splitext(aov.file_effective_path)[0]
-                filepath = filepath.rstrip("0123456789")
-                files = files_resolver_fn(filepath)
+                files = files_resolver_fn(
+                    lib_renderproducts.strip_frame_suffix(
+                        aov.file_effective_path
+                    )
+                )
             else:
                 # Make a copy because we may alter it for AOV suffix
                 multipass_token_path_aov = multipass_token_path

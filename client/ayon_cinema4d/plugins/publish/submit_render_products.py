@@ -10,13 +10,14 @@ MULTIPASS_NAME = "multipass"
 
 
 class SubmitRenderProducts(pyblish.api.InstancePlugin):
-    """Merge the Multi-Layer file into the render product and review it.
+    """Merge the extra render outputs into the product and review it.
 
     The ayon-deadline publish job creates one product per AOV, so the
-    Multi-Layer file would be published as separate `<product>_multipass`
-    product. Its sequence is moved into the render product as `multipass`
-    representation and the rendered frames are tagged for review, which makes
-    AYON create a movie from them.
+    Multi-Layer file and the passes Redshift writes separately (Cryptomatte)
+    would become `<product>_multipass` / `<product>_cryptomatte` products.
+    `CollectCinema4DRender` lists them in `mergedAovs`, their sequences are
+    moved into the render product as representations instead. The rendered
+    frames are tagged for review, which makes AYON create a movie from them.
     """
 
     label = "Merge Farm Render Products"
@@ -54,7 +55,8 @@ class SubmitRenderProducts(pyblish.api.InstancePlugin):
             instance.context.data["project_settings"]
         )
         changed = self.add_review(product) if settings["review"] else False
-        changed = self.merge_multipass(instances, product) or changed
+        merged = instance.data.get("mergedAovs") or [MULTIPASS_NAME]
+        changed = self.merge_aovs(instances, product, merged) or changed
         if not changed:
             return
 
@@ -79,18 +81,22 @@ class SubmitRenderProducts(pyblish.api.InstancePlugin):
         self.log.debug(f"Review enabled for: {product['productName']}")
         return True
 
-    def merge_multipass(self, instances, product):
-        """Move the Multi-Layer representations into the render product."""
+    def merge_aovs(self, instances, product, merged_aovs):
+        """Move the AOVs that belong to the render into its product.
+
+        The Multi-Layer file and the passes Redshift writes separately
+        (Cryptomatte) are the same render, so they become representations
+        instead of `<product>_multipass` / `<product>_cryptomatte` products.
+        """
         merged = False
         for other in list(instances):
-            if other is product or other.get("aov") != MULTIPASS_NAME:
+            aov = other.get("aov")
+            if other is product or not aov or aov not in merged_aovs:
                 continue
 
             representations = product.setdefault("representations", [])
             for index, repre in enumerate(other.get("representations") or []):
-                name = MULTIPASS_NAME
-                if index:
-                    name = f"{MULTIPASS_NAME}{index + 1}"
+                name = aov if not index else f"{aov}{index + 1}"
                 repre["name"] = name
                 repre["outputName"] = name
                 # The render product is the reviewed one
