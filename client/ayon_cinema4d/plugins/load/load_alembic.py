@@ -109,6 +109,8 @@ class AlembicLoader(plugin.Cinema4DLoader):
         for i, base_container in container_node.GetUserDataContainer():
             if base_container[c4d.DESC_NAME] == "representation":
                 container_node[i] = context["representation"]["id"]
+            elif base_container[c4d.DESC_NAME] == "project_name":
+                container_node[i] = context["project"]["name"]
 
         c4d.EventAdd()
 
