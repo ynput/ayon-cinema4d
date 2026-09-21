@@ -305,6 +305,8 @@ class Cinema4DSingleObjLoader(Cinema4DLoader, ABC):
         for i, base_container in obj.GetUserDataContainer():
             if base_container[c4d.DESC_NAME] == "representation":
                 obj[i] = context["representation"]["id"]
+            elif base_container[c4d.DESC_NAME] == "project_name":
+                obj[i] = context["project"]["name"]
 
         c4d.EventAdd()
 

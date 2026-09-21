@@ -265,6 +265,7 @@ def imprint_container(
         "namespace": namespace,
         "loader": str(loader),
         "representation": str(context["representation"]["id"]),
+        "project_name": context["project"]["name"],
     }
 
     lib.imprint(container, data, group="AYON")
