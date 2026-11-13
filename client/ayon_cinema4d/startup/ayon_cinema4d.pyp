@@ -42,6 +42,8 @@ from ayon_core.pipeline import (
     get_current_folder_path,
     get_current_task_name
 )
+from ayon_core.pipeline.context_tools import get_current_project_settings  # noqa: E402,E501
+from ayon_core.pipeline.workfile import save_next_version  # noqa: E402
 from ayon_cinema4d.api import Cinema4DHost  # noqa: E402
 from ayon_cinema4d.api.lib import get_main_window  # noqa: E402
 from ayon_cinema4d.api.commands import (
@@ -64,6 +66,7 @@ AYON_RESET_RESOLUTION_ID = 1064318
 AYON_RESET_COLORSPACE_ID = 1064320
 AYON_RESET_RENDER_SETTINGS_ID = 1064316
 AYON_EXPERIMENTAL_TOOLS_ID = 1064319
+AYON_VERSION_UP_WORKFILE_ID = 1074089
 
 AYON_CONTEXT_LABEL_ID = 1064692
 
@@ -159,6 +162,15 @@ class Workfiles(c4d.plugins.CommandData):
         return True
 
 
+class VersionUpWorkfile(c4d.plugins.CommandData):
+    id = AYON_VERSION_UP_WORKFILE_ID
+    label = "Version Up Workfile"
+
+    def Execute(self, doc):
+        save_next_version()
+        return True
+
+
 class ResetFrameRange(c4d.plugins.CommandData):
     id = AYON_RESET_FRAME_RANGE_ID
     label = "Reset Frame Range"
@@ -238,6 +250,11 @@ def install_menu():
 
     add_command(menu, ContextLabel)
     menu.InsData(menuresource_separator, True)
+    project_settings = get_current_project_settings()
+    if project_settings["core"]["tools"]["ayon_menu"].get(
+            "version_up_current_workfile"):
+        add_command(menu, VersionUpWorkfile)
+        menu.InsData(menuresource_separator, True)
     add_command(menu, Creator)
     add_command(menu, Loader)
     add_command(menu, Publish)
@@ -289,6 +306,7 @@ if __name__ == '__main__':
         Manage,
         Library,
         Workfiles,
+        VersionUpWorkfile,
         ResetFrameRange,
         ResetSceneResolution,
         ResetColorspace,
