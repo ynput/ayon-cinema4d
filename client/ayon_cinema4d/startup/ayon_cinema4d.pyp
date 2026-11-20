@@ -59,7 +59,6 @@ AYON_LOAD_ID = 1064311
 AYON_CREATE_ID = 1064312
 AYON_PUBLISH_ID = 1064313
 AYON_MANAGE_ID = 1064315
-AYON_LIBRARY_ID = 1064314
 AYON_WORKFILES_ID = 1064310
 AYON_RESET_FRAME_RANGE_ID = 1064317
 AYON_RESET_RESOLUTION_ID = 1064318
@@ -133,18 +132,6 @@ class Manage(c4d.plugins.CommandData):
 
     def Execute(self, doc):
         host_tools.show_scene_inventory(
-            parent=get_main_window()
-        )
-        return True
-
-
-class Library(c4d.plugins.CommandData):
-    id = AYON_LIBRARY_ID
-    label = "Library..."
-    icon = get_icon_bitmap_by_name("folder-favorite")
-
-    def Execute(self, doc):
-        host_tools.show_library_loader(
             parent=get_main_window()
         )
         return True
@@ -259,7 +246,6 @@ def install_menu():
     add_command(menu, Loader)
     add_command(menu, Publish)
     add_command(menu, Manage)
-    add_command(menu, Library)
     menu.InsData(menuresource_separator, True)
     add_command(menu, Workfiles)
     menu.InsData(menuresource_separator, True)
@@ -304,7 +290,6 @@ if __name__ == '__main__':
         Loader,
         Publish,
         Manage,
-        Library,
         Workfiles,
         VersionUpWorkfile,
         ResetFrameRange,
