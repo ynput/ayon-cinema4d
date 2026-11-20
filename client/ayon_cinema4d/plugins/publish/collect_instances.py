@@ -38,6 +38,11 @@ class CollectInstances(pyblish.api.InstancePlugin):
         name = instance_node.GetName()  # use short name
         label = "{0} ({1})".format(name, instance.data["folderPath"])
 
+        # Fall back to the document fps when the creator has no `fps`
+        instance.data.setdefault(
+            "fps", instance.context.data["doc"].GetFps()
+        )
+
         # Set frame start handle and frame end handle if frame ranges are
         # available
         if "frameStart" in instance.data and "frameEnd" in instance.data:
@@ -50,7 +55,7 @@ class CollectInstances(pyblish.api.InstancePlugin):
                 instance.data["frameStart"] - instance.data["handleStart"]
             )
             frame_end_handle = (
-                instance.data["frameEnd"] - instance.data["handleEnd"]
+                instance.data["frameEnd"] + instance.data["handleEnd"]
             )
             instance.data["frameStartHandle"] = frame_start_handle
             instance.data["frameEndHandle"] = frame_end_handle
